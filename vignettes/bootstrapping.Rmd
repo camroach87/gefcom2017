@@ -37,8 +37,8 @@ registerDoMC(cores = 3)
 load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
 load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
 
-smd <- load_smd_data(load_zones, root_dir = "./..")
-smd <- clean_smd_data(smd, root_dir = "./..")
+smd <- load_smd_data(load_zones, root_dir = ".")
+smd <- clean_smd_data(smd, root_dir = ".")
 
 iZ <- "VT"
 
