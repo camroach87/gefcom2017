@@ -1,12 +1,14 @@
 ---
 title: "SMD Boosting Models"
-author: Cameron Roach
-output: 
-  html_notebook: 
+author: "Cameron Roach"
+output:
+  pdf_document:
+    toc: yes
+  html_notebook:
     number_sections: yes
     toc: yes
     toc_float:
-      collapsed: false
+      collapsed: no
 ---
 
 ```{r setup, include=FALSE}
@@ -29,25 +31,27 @@ require(myhelpr)
 require(doMC)
 require(gefcom2017)
 
-registerDoMC(cores = 3)
+registerDoMC(cores = 11)
 
 load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
 load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
 
-smd <- load_smd_data(load_zones, root_dir = "./..")
-smd <- clean_smd_data(smd, root_dir = "./..")
+smd <- load_smd_data(load_zones, root_dir = ".")
+smd <- clean_smd_data(smd, root_dir = ".")
 
 smd <- smd %>%
   group_by(Zone) %>% 
-  do(get_lagged_vars(.)) %>% 
+  do(get_lagged_vars(., c("DryBulb", "DewPnt"), lags = c(1, 2, 3, 4, 24:27, 48:51))) %>% 
+  #do(get_lagged_vars(., c("DryBulb", "DewPnt"), lags = 1:48)) %>% 
   ungroup() %>% 
-  filter(Year >= 2012)
+  filter(Year >= 2011)
 ```
 
 # TODO
 
 * Think about converting Hour from hour ending to hour beginning. Ensures that the date and hour match up.
 * Maybe have 2 models. One for DST months and another for non-daylight savings times? When DST starts on March 8th, the time of the peak shifts back one period (from 19 to 20). So, basically, it looks like demand is behaving as before (peak still occurs at same non-DST time), but because we have shifted to DST it looks like the peak has been shifted back by an hour. This may be affecting the model fit.
+* IMPORTANT: Add in day of year or day of season/modelling period to models.
 
 
 # Introduction
@@ -108,49 +112,51 @@ xgb_ctrl <- trainControl(method = "repeatedcv",
 
 xgb_grid_linear <- expand.grid(nrounds = 300,
                                alpha = 0,
-                               lambda = 100,
+                               lambda = exp(0:7),
                                eta = 0.1)
 
-xgb_fit <- NULL
-system.time({
-  for (iZ in load_zones) {
-    cat("Fitting model for zone", iZ, "...\n")
-    xgb_fit[[iZ]] <- smd %>% 
-      filter(Zone == iZ) %>% 
-      select(Demand, Period, starts_with("DryBulb"), starts_with("DewPnt")) %>% 
-      mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-                scale, center = FALSE) %>% 
-      train(Demand ~ . ,
-            data = .,
-            method="xgbLinear",
-            trControl = xgb_ctrl,
-            tuneGrid = xgb_grid_linear,
-            nthread = 1)
-  }
-})
-
-save(xgb_fit, file = "./cache/xgb_fit_smd_load_forecasting.RData")
+if (file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
+  load("./cache/xgb_fit_smd_load_forecasting.RData")
+} else {
+  xgb_fit <- NULL
+  system.time({
+    for (iZ in load_zones) {
+      cat("Fitting model for zone", iZ, "...\n")
+      xgb_fit[[iZ]] <- smd %>% 
+        filter(Zone == iZ) %>% 
+        select(Demand, Period, DoY, starts_with("DryBulb"), starts_with("DewPnt")) %>%
+        mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+                  scale, center = FALSE) %>% 
+        train(Demand ~ . ,
+              data = .,
+              method="xgbLinear",
+              trControl = xgb_ctrl,
+              tuneGrid = xgb_grid_linear,
+              nthread = 1)
+    }
+  })
+  
+  save(xgb_fit, file = "./cache/xgb_fit_smd_load_forecasting.RData")
+}
 ```
 
 
 ```{r performance_zones}
-performance_df <- NULL
-for (iM in names(xgb_fit)) {
-  performance_df <- data.frame(
-    Model = iM,
-    RMSE = min(xgb_fit[[iM]]$results$RMSE)
-  ) %>% 
-    bind_rows(performance_df)
+results_df <- NULL
+for (iZ in names(xgb_fit)) {
+  results_df <- data.frame(Zone = iZ,
+                           xgb_fit[[iZ]]$results) %>% 
+    bind_rows(results_df, .)
 }
 
-performance_df$Model <- factor(performance_df$Model,
-                               levels = names(xgb_fit),
-                               ordered = TRUE)
-
-ggplot(performance_df, aes(x=Model, y=RMSE)) +
-  geom_point() +
-  ggtitle("3-fold CV RMSE for load zones") +
-  coord_flip()
+results_df %>% 
+  ggplot(aes(x = lambda, y = RMSE, colour = Zone)) +
+  geom_line() +
+  ggtitle("3-fold CV RMSE by zone") +
+  scale_x_continuous(trans = "log",
+                     labels = function(x) round(x, 0)) +
+  facet_wrap(~Zone, scales = "free_y") +
+  theme(legend.position = "none")
 ```
 
 
@@ -159,6 +165,33 @@ ggplot(performance_df, aes(x=Model, y=RMSE)) +
 Two aggregated zones need to be forecast. One for the three zones comprising Massachusetts and another for the sum of all eight zones.
 
 **TODO**
+
+
+## Residual calcuation
+
+Later residuals will be bootstrapped and added to model predictions. Here we calculate the historical residuals.
+
+```{r calc_residuals}
+# not nice code but quicker than dply mutate(demand_pred = if_else(...))
+tmp2 <- NULL
+for (iZ in names(xgb_fit)) {
+  # remember to scale predictor data again!
+  tmp1 <- smd %>% 
+    filter(Zone == iZ) %>% 
+    mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+              scale, center = FALSE)
+  
+  tmp1 <- data.frame(tmp1,
+                     Demand_pred = predict(xgb_fit[[iZ]], tmp1))
+  tmp2 <- bind_rows(tmp2, tmp1)
+}
+smd <- tmp2
+rm(list = c("tmp1", "tmp2"))
+
+smd <- smd %>%
+  mutate(Demand_resid = Demand - Demand_pred)
+```
+
 
 
 # Bootstrapping
