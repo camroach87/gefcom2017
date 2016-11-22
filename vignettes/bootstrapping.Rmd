@@ -56,8 +56,6 @@ The bootstrapping method will return date and time values so that any variable c
 
 The parameters `delta1` and `delta2` set the amount of variation in the date chosen and the length of the block sampled.
 
-**NOTE: Be careful when sampling at end of year. Make sure we move from one year to the next and don't accidentally sample from beginning => discontinuity!**
-
 ```{}
 GET days in season
 SET delta1, delta2
