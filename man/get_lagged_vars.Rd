@@ -4,10 +4,14 @@
 \alias{get_lagged_vars}
 \title{Get lagged variables}
 \usage{
-get_lagged_vars(x)
+get_lagged_vars(x, variables, lags = 1)
 }
 \arguments{
 \item{x}{cleaned data frame. Should be the output from \code{clean_smd_data()} function.}
+
+\item{variables}{character vector. Vector of variable names that should be lagged.}
+
+\item{lags}{numeric vector. Vector of lags to calculate. Hourly values.}
 }
 \value{
 A data frame containing lagged variables.
