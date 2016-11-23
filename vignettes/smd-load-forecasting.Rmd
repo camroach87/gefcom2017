@@ -192,7 +192,7 @@ xgb_ctrl <- trainControl(method = "repeatedcv",
 
 xgb_grid_linear <- expand.grid(nrounds = 300,
                                alpha = 0,
-                               lambda = exp(0:6),
+                               lambda = c(0, exp(0:6)),
                                eta = 0.1)
 
 if (file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
