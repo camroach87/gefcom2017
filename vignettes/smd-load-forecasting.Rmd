@@ -35,15 +35,49 @@ registerDoMC(cores = 11)
 
 load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
 load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
+agg_zones <- c("MASS", "TOTAL")
+all_zones <- c(load_zones, agg_zones)
 
 smd <- load_smd_data(load_zones, root_dir = ".")
 smd <- clean_smd_data(smd, root_dir = ".")
 
+# separate data frames for aggregated zones because may change modelling, 
+# e.g., remove average of variables and include all individual ones.
+smd_mass <- smd %>% 
+  filter(Zone %in% load_zones_ma) %>% 
+  group_by(Date, Hour, Holiday, Holiday_flag, ts, Period, Year, Month, DoW,
+           DoY, Weekend) %>% 
+  summarise(Demand = sum(Demand),
+            DryBulb = mean(DryBulb),
+            DewPnt = mean(DewPnt),
+            DryDewDiff = mean(DryDewDiff)) %>% 
+  ungroup() %>% 
+  mutate(Zone = "MASS")
+
+smd_total <- smd %>% 
+  group_by(Date, Hour, Holiday, Holiday_flag, ts, Period, Year, Month, DoW,
+           DoY, Weekend) %>% 
+  summarise(Demand = sum(Demand),
+            DryBulb = mean(DryBulb),
+            DewPnt = mean(DewPnt),
+            DryDewDiff = mean(DryDewDiff)) %>% 
+  ungroup() %>% 
+  mutate(Zone = "TOTAL")
+
+# create lagged predictors
 smd <- smd %>%
   group_by(Zone) %>% 
   do(get_lagged_vars(., c("DryBulb", "DewPnt"), lags = c(1, 2, 3, 4, 24:27, 48:51))) %>% 
   #do(get_lagged_vars(., c("DryBulb", "DewPnt"), lags = 1:48)) %>% 
   ungroup() %>% 
+  filter(Year >= 2011)
+
+smd_mass <- smd_mass %>% 
+  do(get_lagged_vars(., c("DryBulb", "DewPnt"), lags = c(1, 2, 3, 4, 24:27, 48:51))) %>% 
+  filter(Year >= 2011)
+
+smd_total <- smd_total %>% 
+  do(get_lagged_vars(., c("DryBulb", "DewPnt"), lags = c(1, 2, 3, 4, 24:27, 48:51))) %>% 
   filter(Year >= 2011)
 ```
 
@@ -87,6 +121,52 @@ We wish to produce quantile forecasts (10, 20, ..., 90) for each day in a future
 
 Since we are not provided forecast weather data for the month we will need to rely on a bootstrapping approach to create a distribution.
 
+# Data
+
+The below plots show some useful summary statistics of the load zone data. A small portion of the time-series data is given for each of the zones. Boxplots show the hourly demand values. 
+
+```{r data_exploration}
+smd %>% 
+  filter(Year == 2015, Month == "Jan") %>% 
+  ggplot(aes(x = ts, y = Demand)) + 
+  geom_line() + 
+  facet_wrap(~Zone) +
+  ggtitle("Demand in January 2015")
+
+smd %>% 
+  ggplot(aes(x = Zone, y = Demand)) + 
+  geom_boxplot() +
+  ggtitle("Boxplots of hourly demand by zone.")
+```
+
+## Aggregated zones
+
+Two aggregated zones are to be forecast. SEMASS, WCMASS and NEMASSBOST for the Massachusetts zone (MASS) and the sum of all eight zones is the total zone (TOTAL). As a starting point, each weather variable used in the model will be the average of the same weather variable in the zones that make up the aggregated zone.
+
+
+```{r}
+smd_mass %>% 
+  select(Zone, Demand, ts, Year, Month) %>% 
+  bind_rows(smd_total %>% 
+              select(Zone, Demand, ts, Year, Month)) %>% 
+  filter(Year == 2015, Month == "Jan") %>% 
+  ggplot(aes(x = ts, y = Demand)) + 
+  geom_line() + 
+  facet_wrap(~Zone) +
+  ggtitle("Demand in January 2015 for aggregated zones")
+
+smd_mass %>% 
+  select(Zone, Demand, ts) %>% 
+  bind_rows(smd_total %>% 
+              select(Zone, Demand, ts)) %>% 
+  ggplot(aes(x = Zone, y = Demand)) + 
+  geom_boxplot() +
+  ggtitle("Boxplots of hourly demand by aggregated zone.")
+```
+
+
+
+
 # Modelling
 
 This project will be broken into several parts.
@@ -112,7 +192,7 @@ xgb_ctrl <- trainControl(method = "repeatedcv",
 
 xgb_grid_linear <- expand.grid(nrounds = 300,
                                alpha = 0,
-                               lambda = exp(0:7),
+                               lambda = exp(0:6),
                                eta = 0.1)
 
 if (file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
@@ -124,7 +204,7 @@ if (file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
       cat("Fitting model for zone", iZ, "...\n")
       xgb_fit[[iZ]] <- smd %>% 
         filter(Zone == iZ) %>% 
-        select(Demand, Period, DoY, starts_with("DryBulb"), starts_with("DewPnt")) %>%
+        select(Demand, Period, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
         mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
                   scale, center = FALSE) %>% 
         train(Demand ~ . ,
@@ -135,8 +215,6 @@ if (file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
               nthread = 1)
     }
   })
-  
-  save(xgb_fit, file = "./cache/xgb_fit_smd_load_forecasting.RData")
 }
 ```
 
@@ -164,7 +242,56 @@ results_df %>%
 
 Two aggregated zones need to be forecast. One for the three zones comprising Massachusetts and another for the sum of all eight zones.
 
-**TODO**
+```{r fit_agg_zones}
+if (!file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
+  system.time({
+    cat("Fitting model for zone MASS...\n")
+    xgb_fit[["MASS"]] <- smd_mass %>% 
+      select(Demand, Period, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
+      mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+                scale, center = FALSE) %>% 
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = xgb_grid_linear,
+            nthread = 1)
+    
+    cat("Fitting model for zone TOTAL...\n")
+    xgb_fit[["TOTAL"]] <- smd_total %>% 
+      select(Demand, Period, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
+      mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+                scale, center = FALSE) %>% 
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = xgb_grid_linear,
+            nthread = 1)
+  })
+  
+  save(xgb_fit, file = "./cache/xgb_fit_smd_load_forecasting.RData")
+}
+```
+
+
+```{r performance_agg_zones}
+for (iZ in agg_zones) {
+  results_df <- data.frame(Zone = iZ,
+                           xgb_fit[[iZ]]$results) %>% 
+    bind_rows(results_df, .)
+}
+
+results_df %>% 
+  filter(Zone %in% agg_zones) %>% 
+  ggplot(aes(x = lambda, y = RMSE, colour = Zone)) +
+  geom_line() +
+  ggtitle("3-fold CV RMSE by aggregated zone") +
+  scale_x_continuous(trans = "log",
+                     labels = function(x) round(x, 0)) +
+  facet_wrap(~Zone, scales = "free_y") +
+  theme(legend.position = "none")
+```
 
 
 ## Residual calcuation
@@ -172,24 +299,99 @@ Two aggregated zones need to be forecast. One for the three zones comprising Mas
 Later residuals will be bootstrapped and added to model predictions. Here we calculate the historical residuals.
 
 ```{r calc_residuals}
-# not nice code but quicker than dply mutate(demand_pred = if_else(...))
-tmp2 <- NULL
-for (iZ in names(xgb_fit)) {
+# Manually specify which variables we want to avoid including predictors 
+# in case aggregated zones use different predictors.
+pred_df_vars <- c("ts", "Date", "DoY", "Year", "Hour", "Period", "Zone", 
+                  "Holiday", "Holiday_flag", "Demand", "Demand_pred")
+
+# none of this code is nice :(
+pred_df <- NULL
+for (iZ in load_zones) {
   # remember to scale predictor data again!
-  tmp1 <- smd %>% 
+  pred_df <- smd %>% 
     filter(Zone == iZ) %>% 
     mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-              scale, center = FALSE)
-  
-  tmp1 <- data.frame(tmp1,
-                     Demand_pred = predict(xgb_fit[[iZ]], tmp1))
-  tmp2 <- bind_rows(tmp2, tmp1)
+              scale, center = FALSE) %>% 
+    data.frame(.,
+               Demand_pred = predict(xgb_fit[[iZ]], .)) %>% 
+    select(one_of(pred_df_vars)) %>% 
+    bind_rows(pred_df)
 }
-smd <- tmp2
-rm(list = c("tmp1", "tmp2"))
 
-smd <- smd %>%
-  mutate(Demand_resid = Demand - Demand_pred)
+# MASS predictions
+pred_df <- smd_mass %>% 
+  mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+              scale, center = FALSE) %>% 
+    data.frame(.,
+               Demand_pred = predict(xgb_fit[["MASS"]], .)) %>% 
+    select(one_of(pred_df_vars)) %>% 
+    bind_rows(pred_df)
+
+# TOTAL predictions
+pred_df <- smd_total %>% 
+  mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+              scale, center = FALSE) %>% 
+    data.frame(.,
+               Demand_pred = predict(xgb_fit[["TOTAL"]], .)) %>% 
+    select(one_of(pred_df_vars)) %>% 
+    bind_rows(pred_df)
+
+
+pred_df <- pred_df %>%
+  mutate(Demand_resid = Demand - Demand_pred,
+         Zone = factor(Zone, levels = all_zones, ordered = T))
+```
+
+```{r residual_plots}
+pred_df %>% 
+  ggplot(aes(x = DoY, y = Demand_resid)) +
+  geom_point(shape = 21, alpha = 0.15) +
+  geom_smooth() +
+  facet_wrap(~Zone, scales = "free_y") +
+  ggtitle("Residuals across year")
+
+pred_df %>% 
+  filter(Year == 2015) %>% 
+  ggplot(aes(x = Hour, y = Demand_resid)) +
+  geom_point(shape = 21, alpha = 0.15) +
+  geom_smooth(se = F) +
+  facet_wrap(~Zone, scales = "free_y") +
+  ggtitle("Residuals across day")
+
+pred_df %>% 
+  filter(Year == 2015) %>% 
+  ggplot(aes(x = Demand, y = Demand_resid)) +
+  geom_point(shape = 21, alpha = 0.15) +
+  geom_smooth(se = F) +
+  facet_wrap(~Zone, scales = "free") +
+  ggtitle("Residuals and demand")
+
+pred_df %>% 
+  filter(Zone == "ME") %>% 
+  ggplot(aes(x=factor(Hour), y=Demand_resid)) + 
+  geom_boxplot()
+```
+
+```{r residual_autocorrelation}
+acf_df <- NULL
+for(iZ in all_zones) {
+  
+  tmp <- acf(pred_df %>% 
+    filter(Zone == iZ) %>% 
+    select(Demand_resid),
+    plot = FALSE, lag.max = 24*30)
+  
+  acf_df <- data.frame(Zone = iZ,
+                       acf = tmp$acf,
+                       lag = tmp$lag,
+                       Zone = iZ) %>% 
+    bind_rows(acf_df)
+}
+
+ggplot(acf_df, aes(x=lag, y=acf)) +
+  geom_line() +
+  facet_wrap(~Zone) +
+  ggtitle("Autocorrelation plots")
 ```
 
 
@@ -206,19 +408,26 @@ and spatial correlations such as,
 
 ## Weather bootstrapping
 
-Historical weather data will be bootstrapped in blocks that preserve intra-day weather correlation.
+Historical weather data will be bootstrapped in blocks that preserve intra-day weather correlation and seasonal weather correlation. Her we use a similar method to Hyndman and Shu (2010) (see bootstrapping doc for more info).
 
+**TODO: carry out bootstrapping using function**
 
 
 ## Residual bootstrapping
 
-In addition to bootstrapping historical weather data to obtain weather scenarios, bootstrapping of the residuals needs to be undertaken. These bootstrapped residuals can then be added back to the fitted values to produce the estimated demand values.
+In addition to bootstrapping historical weather data to obtain weather scenarios, bootstrapping of the residuals needs to be carried out. These bootstrapped residuals can then be added back to the fitted values to produce the estimated demand values.
 
 We expect to see correlation in demand between zones. To preserve this correlation, a blocked bootstrap approach will be taken, where each block contains all the zones. This way, zones are shifted together thereby preserving there correlations. This has the advantage of allowing us to simply sum all of the residuals within an aggregated zone to obtain its aggregated residual. _See Souhaib "bagging quantile regression"._
 
-## Aggregated forecast reconciliation
+Based on the ACF plots produced earlier, it looks as though correlation only really holds for for two to three days in the residuals. We will use a simple block bootstrapping process, again similar to Hyndman and Shu (2010). All of the historical years of data will be broken into 
+
+**TODO: write another bootstrapping function for this. Should be quick. Then just add the bootstrapped residuals to the predicted demand based off simulated weather seasons.**
+
+
+# Forecast reconciliation
 
 R's `hts` package can be used to reconcile the means of heirarchical forecasts. Since we are forecasting the conditional mean on the bootstrap samples we can use `hts` to reconcile the aggregated means and zone means. Empirical quantiles may then be calculated from these reconciled forecasts for each zone and aggregated zone.
+
 
 # Quantile calculations
 
