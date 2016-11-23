@@ -370,9 +370,13 @@ pred_df %>%
   ggtitle("Residuals and demand")
 
 pred_df %>% 
-  filter(Zone == "ME") %>% 
+  filter(Zone %in% sample(all_zones, 3)) %>% 
   ggplot(aes(x=factor(Hour), y=Demand_resid)) + 
-  geom_boxplot()
+  geom_boxplot() +
+  facet_wrap(~Zone, scales = "free") +
+  xlab("Hour") +
+  ggtitle("Hourly boxplots of residuals",
+          "For 3 randomly sampled zones")
 ```
 
 ```{r residual_autocorrelation}
@@ -391,9 +395,9 @@ for(iZ in all_zones) {
     bind_rows(acf_df)
 }
 
-ggplot(acf_df, aes(x=lag, y=acf)) +
+ggplot(acf_df, aes(x=lag, y=acf, colour = Zone)) +
   geom_line() +
-  facet_wrap(~Zone) +
+  #facet_wrap(~Zone) +
   ggtitle("Autocorrelation plots")
 ```
 
