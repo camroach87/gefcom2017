@@ -204,7 +204,8 @@ if (file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
       cat("Fitting model for zone", iZ, "...\n")
       xgb_fit[[iZ]] <- smd %>% 
         filter(Zone == iZ) %>% 
-        select(Demand, Period, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
+        # select(Demand, Period, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
+        select(Demand, Hour, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
         mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
                   scale, center = FALSE) %>% 
         train(Demand ~ . ,
@@ -247,7 +248,8 @@ if (!file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
   system.time({
     cat("Fitting model for zone MASS...\n")
     xgb_fit[["MASS"]] <- smd_mass %>% 
-      select(Demand, Period, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
+      #select(Demand, Period, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
+      select(Demand, Hour, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
       mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
                 scale, center = FALSE) %>% 
       train(Demand ~ . ,
@@ -259,7 +261,8 @@ if (!file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
     
     cat("Fitting model for zone TOTAL...\n")
     xgb_fit[["TOTAL"]] <- smd_total %>% 
-      select(Demand, Period, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
+      #select(Demand, Period, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
+      select(Demand, Hour, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
       mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
                 scale, center = FALSE) %>% 
       train(Demand ~ . ,
