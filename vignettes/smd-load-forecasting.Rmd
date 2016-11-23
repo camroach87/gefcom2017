@@ -440,6 +440,15 @@ R's `hts` package can be used to reconcile the means of heirarchical forecasts. 
 
 Quantiles may be calculated for each hour of each day by simply calculating the empirical quantiles of the bootstrapped demand traces. R's `quantile` function is all that is needed for this.
 
+
+# Forecast validation
+
+* Calculate pinabll loss scores for an out of sample month.
+* Check pinball loss scores for the month by year.
+    + There might have cases when a year is consistently around 90 quantile, another year where demand is consistently around 10th quantile.
+    + Is it possible to do some sort of normalisation on demand by year? Can then just scale the quantiles by forecast consumption for the month. Adds extra uncertainty though... if the consumption forecast is wrong everything will be way off.
+    + Maybe have lagged variables from previous month or two? could be demand at same time in previous months or a summary statistics like average demand in month. Could fix this and help compensate for if it's a low or high consumption year.
+
 # Output
 
 Performance will be assessed using the pinball loss function.
