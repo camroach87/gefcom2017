@@ -142,8 +142,10 @@ smd %>%
   ggtitle("Demand in January 2015")
 
 smd %>% 
-  ggplot(aes(x = Zone, y = Demand)) + 
+  mutate(Year = factor(Year)) %>% 
+  ggplot(aes(x = Year, y = Demand)) + 
   geom_boxplot() +
+  facet_wrap(~Zone, scales = "free_y") +
   ggtitle("Boxplots of hourly demand by zone.")
 ```
 
@@ -164,11 +166,13 @@ smd_mass %>%
   ggtitle("Demand in January 2015 for aggregated zones")
 
 smd_mass %>% 
-  select(Zone, Demand, ts) %>% 
+  select(Zone, Demand, ts, Year) %>% 
   bind_rows(smd_total %>% 
-              select(Zone, Demand, ts)) %>% 
-  ggplot(aes(x = Zone, y = Demand)) + 
+              select(Zone, Demand, ts, Year)) %>% 
+  mutate(Year = factor(Year)) %>% 
+  ggplot(aes(x = Year, y = Demand)) + 
   geom_boxplot() +
+  facet_wrap(~Zone, scales = "free_y") +
   ggtitle("Boxplots of hourly demand by aggregated zone.")
 ```
 
@@ -426,20 +430,47 @@ bs_dates <- dbl_block_bs(smd$Date,
                          delta_len = 3)
 
 weather_bs <- smd %>% 
-    mutate(Date = as.Date(Date)) %>% 
-    right_join(bs_dates) %>% 
-    mutate(ts = ymd_h(paste(Date_seq, Hour)))
+  mutate(Date = as.Date(Date)) %>% 
+  right_join(bs_dates) %>% 
+  mutate(ts = ymd_h(paste(Date_seq, Hour))) %>% 
+  select(-Date) %>% 
+  rename(Date = Date_seq) %>% 
+  get_calendar_vars(.) # need to be recalculated based on sequential dates
 
-############################################################
+weather_bs_mass <- smd_mass %>% 
+  mutate(Date = as.Date(Date)) %>% 
+  right_join(bs_dates) %>% 
+  mutate(ts = ymd_h(paste(Date_seq, Hour))) %>% 
+  select(-Date) %>% 
+  rename(Date = Date_seq) %>% 
+  get_calendar_vars(.) # need to be recalculated based on sequential dates
+
+weather_bs_total <- smd_total %>% 
+  mutate(Date = as.Date(Date)) %>% 
+  right_join(bs_dates) %>% 
+  mutate(ts = ymd_h(paste(Date_seq, Hour))) %>% 
+  select(-Date) %>% 
+  rename(Date = Date_seq) %>% 
+  get_calendar_vars(.) # need to be recalculated based on sequential dates
+
+
+
+####################################################################################
 ### Predictions
-### TODO: turn into function. Gets used above as well.
+### TODO: Turn into function. Gets used above as well. 
+###       there are some minor differences though so be careful
 ### Inputs: x, scale_vars
-### Use: weather_bs %>% filter(Zone==iZ) %>% do(predict_zone(.)) %>% bind_rows(fcst_df)
-############################################################
+### Use: weather_bs %>%
+###          group_by(Zone) %>% 
+###          do(predict_zone(.)) %>% 
+###          bind_rows(fcst_df)
+####################################################################################
 
-# none of this code is nice :(
-fcst_df_vars <- c("ts", "Date_seq", "DoY", "Year", "Hour", "Period", "Zone", 
-                  "Holiday", "Holiday_flag", "Demand", "Prediction")
+# not interested in demand because underlying weather/calendar variables have 
+# changed after bootstrapping
+fcst_df_vars <- c("Simulation", "ts", "Date_seq", "DoY", "Year", "Hour",
+                  "Period", "Zone", "Holiday", "Holiday_flag", "Weekend", 
+                  "Prediction")
 fcst_df <- NULL
 for (iZ in load_zones) {
   # remember to scale predictor data again!
@@ -454,7 +485,7 @@ for (iZ in load_zones) {
 }
 
 # MASS predictions
-fcst_df <- weather_bs %>% 
+fcst_df <- weather_bs_mass %>% 
   mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
               scale, center = FALSE) %>% 
     data.frame(.,
@@ -463,15 +494,25 @@ fcst_df <- weather_bs %>%
     bind_rows(fcst_df)
 
 # TOTAL predictions
-fcst_df <- weather_bs %>% 
+fcst_df <- weather_bs_total %>% 
   mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
               scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[["TOTAL"]], .)) %>% 
     select(one_of(fcst_df_vars)) %>% 
     bind_rows(fcst_df)
+```
 
-fcst_df <- rename(fcst_df, Date = Date_seq)
+
+```{r}
+p_sim <- sample(unique(fcst_df$Simulation), 1)
+fcst_df %>%
+  filter(Simulation == p_sim) %>% 
+  ggplot(aes(x=ts, y=Prediction, colour = Zone)) +
+  geom_line() +
+  geom_point(aes(shape = Weekend)) + 
+  ggtitle("Predicted demand for forecast period.",
+          paste("Simulation", p_sim))
 ```
 
 
@@ -487,7 +528,7 @@ Based on the ACF plots produced earlier, it looks as though correlation only rea
 **TODO: write another bootstrapping function for this. Should be quick. Then just add the bootstrapped residuals to the predicted demand based off simulated weather seasons.**
 
 
-# Forecast reconciliation
+# Base forecast reconciliation
 
 R's `hts` package can be used to reconcile the means of heirarchical forecasts. Since we are forecasting the conditional mean on the bootstrap samples we can use `hts` to reconcile the aggregated means and zone means. Empirical quantiles may then be calculated from these reconciled forecasts for each zone and aggregated zone.
 
