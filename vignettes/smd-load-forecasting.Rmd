@@ -34,11 +34,16 @@ require(gefcom2017)
 
 registerDoMC(cores = 11)
 
+# Inputs
 load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
 load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
 agg_zones <- c("MASS", "TOTAL")
 all_zones <- c(load_zones, agg_zones)
 
+fcst_start_date <- dmy("1/5/2016")
+fcst_end_date <- dmy("1/6/2016") - 1
+
+# Load data
 smd <- load_smd_data(load_zones, root_dir = ".")
 smd <- clean_smd_data(smd, root_dir = ".")
 
@@ -417,11 +422,64 @@ and spatial correlations such as,
 
 * demand correlation between zones.
 
-## Weather bootstrapping
+## Weather bootstrapping and predictions
 
-Historical weather data will be bootstrapped in blocks that preserve intra-day weather correlation and seasonal weather correlation. Her we use a similar method to Hyndman and Shu (2010) (see bootstrapping doc for more info).
+Historical weather data will be bootstrapped in blocks that preserve intra-day weather correlation and seasonal weather correlation. Here we use a similar method to Hyndman and Shu (2010) (see bootstrapping doc for more info). Simulated seasons are then input into the model that was previously fitted for each zone.
 
-**TODO: carry out bootstrapping using function**
+```{r bootstrap_weather}
+bs_dates <- dbl_block_bs(smd$Date,
+                         start_date = fcst_start_date,
+                         end_date = fcst_end_date,
+                         n_sims = 1000, 
+                         avg_block_len = 14,
+                         delta_loc = 3,
+                         delta_len = 3)
+
+weather_bs <- smd %>% 
+    mutate(Date = as.Date(Date)) %>% 
+    right_join(bs_dates) %>% 
+    mutate(ts = ymd_h(paste(Date_seq, Hour)))
+
+############################################################
+### Predictions
+### TODO: turn into function. Gets used above as well.
+### Inputs: x, scale_vars
+### Use: weather_bs %>% filter(Zone==iZ) %>% do(predict_zone(.)) %>% bind_rows(fcst_df)
+############################################################
+
+# none of this code is nice :(
+fcst_df <- NULL
+for (iZ in load_zones) {
+  # remember to scale predictor data again!
+  fcst_df <- weather_bs %>% 
+    filter(Zone == iZ) %>% 
+    mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+              scale, center = FALSE) %>% 
+    data.frame(.,
+               Demand_pred = predict(xgb_fit[[iZ]], .)) %>% 
+    select(one_of(fcst_df_vars)) %>% 
+    bind_rows(fcst_df)
+}
+
+# MASS predictions
+fcst_df <- weather_bs %>% 
+  mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+              scale, center = FALSE) %>% 
+    data.frame(.,
+               Demand_pred = predict(xgb_fit[["MASS"]], .)) %>% 
+    select(one_of(fcst_df_vars)) %>% 
+    bind_rows(fcst_df)
+
+# TOTAL predictions
+fcst_df <- weather_bs %>% 
+  mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+              scale, center = FALSE) %>% 
+    data.frame(.,
+               Demand_pred = predict(xgb_fit[["TOTAL"]], .)) %>% 
+    select(one_of(fcst_df_vars)) %>% 
+    bind_rows(fcst_df)
+```
+
 
 
 ## Residual bootstrapping
@@ -430,7 +488,7 @@ In addition to bootstrapping historical weather data to obtain weather scenarios
 
 We expect to see correlation in demand between zones. To preserve this correlation, a blocked bootstrap approach will be taken, where each block contains all the zones. This way, zones are shifted together thereby preserving there correlations. This has the advantage of allowing us to simply sum all of the residuals within an aggregated zone to obtain its aggregated residual. _See Souhaib "bagging quantile regression"._
 
-Based on the ACF plots produced earlier, it looks as though correlation only really holds for for two to three days in the residuals. We will use a simple block bootstrapping process, again similar to Hyndman and Shu (2010). All of the historical years of data will be broken into 
+Based on the ACF plots produced earlier, it looks as though correlation only really holds for for two to three days in the residuals. We will use a simple block bootstrapping process, again similar to Hyndman and Shu (2010). All of the historical years of data will be broken into blocks of length 3 days and then randomly sampled. The bootstrapped residual series will then be added to the predicted values. This will be carried out for each simulated season.
 
 **TODO: write another bootstrapping function for this. Should be quick. Then just add the bootstrapped residuals to the predicted demand based off simulated weather seasons.**
 
