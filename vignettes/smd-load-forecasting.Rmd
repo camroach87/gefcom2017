@@ -325,7 +325,7 @@ for (iZ in load_zones) {
               scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[[iZ]], .)) %>% 
-    select(one_of(resid_df_vars)) %>% 
+    select(one_of(pred_df_vars)) %>% 
     bind_rows(resid_df)
 }
 
@@ -335,7 +335,7 @@ resid_df <- smd_mass %>%
               scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[["MASS"]], .)) %>% 
-    select(one_of(resid_df_vars)) %>% 
+    select(one_of(pred_df_vars)) %>% 
     bind_rows(resid_df)
 
 # TOTAL predictions
@@ -344,7 +344,7 @@ resid_df <- smd_total %>%
               scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[["TOTAL"]], .)) %>% 
-    select(one_of(resid_df_vars)) %>% 
+    select(one_of(pred_df_vars)) %>% 
     bind_rows(resid_df)
 
 
