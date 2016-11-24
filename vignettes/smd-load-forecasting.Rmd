@@ -376,16 +376,6 @@ resid_df %>%
   geom_smooth(se = F) +
   facet_wrap(~Zone, scales = "free") +
   ggtitle("Residuals and demand")
-
-# resid_df %>% 
-#   #filter(Zone %in% sample(all_zones, 3)) %>% 
-#   ggplot(aes(x=factor(Hour), y=Residual)) + 
-#   geom_boxplot() +
-#   facet_wrap(~Zone, scales = "free") +
-#   xlab("Hour") +
-#   #ggtitle("Hourly boxplots of residuals",
-#   #        "For 3 randomly sampled zones")
-#   ggtitle("Hourly boxplots of residuals")
 ```
 
 ```{r residual_autocorrelation}
