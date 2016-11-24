@@ -26,7 +26,8 @@ load_smd_data <- function(load_zones, root_dir = ".", ignore_cache = FALSE) {
 
       for (iS in load_zones) {
         tmp <- read_excel(file_name, sheet = iS) %>%
-          mutate(Zone = iS) %>%
+          mutate(Zone = iS,
+                 Date = as.Date(Date)) %>%
           select(Date, Hour, Zone, Demand = DEMAND, DryBulb, DewPnt) %>%
           filter(!is.na(Demand)) # some spreadsheet tabs have trailing blank rows
 
