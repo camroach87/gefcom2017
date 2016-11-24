@@ -114,7 +114,9 @@ Additionally, several dummy variables have been calculated. These include,
 * weekend (boolean),
 * dry bulb and dew point temperature differences.
 
-Period of day should be used in place of Hour in modelling as it is a factor.
+~~Period of day should be used in place of Hour in modelling as it is a factor.~~ It appears as though boosting algorithm works fine with Hour (perhaps even better - TODO: check).
+
+Lagged demand predictors will not be used in the model. This is because demand is correlated with day of the week whereas weather conditions are not. Hence, when bootstrapping, the relationship between demand and day of the week will not be preserved due to bootstrap blocks being shifted from there original position.
 
 ## Output
 
@@ -370,14 +372,15 @@ pred_df %>%
   facet_wrap(~Zone, scales = "free") +
   ggtitle("Residuals and demand")
 
-pred_df %>% 
-  filter(Zone %in% sample(all_zones, 3)) %>% 
-  ggplot(aes(x=factor(Hour), y=Demand_resid)) + 
-  geom_boxplot() +
-  facet_wrap(~Zone, scales = "free") +
-  xlab("Hour") +
-  ggtitle("Hourly boxplots of residuals",
-          "For 3 randomly sampled zones")
+# pred_df %>% 
+#   #filter(Zone %in% sample(all_zones, 3)) %>% 
+#   ggplot(aes(x=factor(Hour), y=Demand_resid)) + 
+#   geom_boxplot() +
+#   facet_wrap(~Zone, scales = "free") +
+#   xlab("Hour") +
+#   #ggtitle("Hourly boxplots of residuals",
+#   #        "For 3 randomly sampled zones")
+#   ggtitle("Hourly boxplots of residuals")
 ```
 
 ```{r residual_autocorrelation}
