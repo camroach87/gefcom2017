@@ -313,73 +313,73 @@ Later residuals will be bootstrapped and added to model predictions. Here we cal
 # Manually specify which variables we want to avoid including predictors 
 # in case aggregated zones use different predictors.
 pred_df_vars <- c("ts", "Date", "DoY", "Year", "Hour", "Period", "Zone", 
-                  "Holiday", "Holiday_flag", "Demand", "Demand_pred")
+                  "Holiday", "Holiday_flag", "Demand", "Prediction")
 
 # none of this code is nice :(
-pred_df <- NULL
+resid_df <- NULL
 for (iZ in load_zones) {
   # remember to scale predictor data again!
-  pred_df <- smd %>% 
+  resid_df <- smd %>% 
     filter(Zone == iZ) %>% 
     mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
               scale, center = FALSE) %>% 
     data.frame(.,
-               Demand_pred = predict(xgb_fit[[iZ]], .)) %>% 
-    select(one_of(pred_df_vars)) %>% 
-    bind_rows(pred_df)
+               Prediction = predict(xgb_fit[[iZ]], .)) %>% 
+    select(one_of(resid_df_vars)) %>% 
+    bind_rows(resid_df)
 }
 
 # MASS predictions
-pred_df <- smd_mass %>% 
+resid_df <- smd_mass %>% 
   mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
               scale, center = FALSE) %>% 
     data.frame(.,
-               Demand_pred = predict(xgb_fit[["MASS"]], .)) %>% 
-    select(one_of(pred_df_vars)) %>% 
-    bind_rows(pred_df)
+               Prediction = predict(xgb_fit[["MASS"]], .)) %>% 
+    select(one_of(resid_df_vars)) %>% 
+    bind_rows(resid_df)
 
 # TOTAL predictions
-pred_df <- smd_total %>% 
+resid_df <- smd_total %>% 
   mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
               scale, center = FALSE) %>% 
     data.frame(.,
-               Demand_pred = predict(xgb_fit[["TOTAL"]], .)) %>% 
-    select(one_of(pred_df_vars)) %>% 
-    bind_rows(pred_df)
+               Prediction = predict(xgb_fit[["TOTAL"]], .)) %>% 
+    select(one_of(resid_df_vars)) %>% 
+    bind_rows(resid_df)
 
 
-pred_df <- pred_df %>%
-  mutate(Demand_resid = Demand - Demand_pred,
+resid_df <- resid_df %>%
+  mutate(Residual = Demand - Prediction,
          Zone = factor(Zone, levels = all_zones, ordered = T))
 ```
 
 ```{r residual_plots}
-pred_df %>% 
-  ggplot(aes(x = DoY, y = Demand_resid)) +
+resid_df %>% 
+  ggplot(aes(x = DoY, y = Residual)) +
   geom_point(shape = 21, alpha = 0.15) +
   geom_smooth() +
   facet_wrap(~Zone, scales = "free_y") +
   ggtitle("Residuals across year")
 
-pred_df %>% 
+resid_df %>% 
   filter(Year == 2015) %>% 
-  ggplot(aes(x = Hour, y = Demand_resid)) +
+  ggplot(aes(x = Hour, y = Residual)) +
   geom_point(shape = 21, alpha = 0.15) +
   geom_smooth(se = F) +
   facet_wrap(~Zone, scales = "free_y") +
   ggtitle("Residuals across day")
 
-pred_df %>% 
+resid_df %>% 
   filter(Year == 2015) %>% 
-  ggplot(aes(x = Demand, y = Demand_resid)) +
+  ggplot(aes(x = Demand, y = Residual)) +
   geom_point(shape = 21, alpha = 0.15) +
   geom_smooth(se = F) +
   facet_wrap(~Zone, scales = "free") +
   ggtitle("Residuals and demand")
 
-# pred_df %>% 
+# resid_df %>% 
 #   #filter(Zone %in% sample(all_zones, 3)) %>% 
-#   ggplot(aes(x=factor(Hour), y=Demand_resid)) + 
+#   ggplot(aes(x=factor(Hour), y=Residual)) + 
 #   geom_boxplot() +
 #   facet_wrap(~Zone, scales = "free") +
 #   xlab("Hour") +
@@ -392,9 +392,9 @@ pred_df %>%
 acf_df <- NULL
 for(iZ in all_zones) {
   
-  tmp <- acf(pred_df %>% 
+  tmp <- acf(resid_df %>% 
     filter(Zone == iZ) %>% 
-    select(Demand_resid),
+    select(Residual),
     plot = FALSE, lag.max = 24*30)
   
   acf_df <- data.frame(Zone = iZ,
@@ -456,7 +456,7 @@ for (iZ in load_zones) {
     mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
               scale, center = FALSE) %>% 
     data.frame(.,
-               Demand_pred = predict(xgb_fit[[iZ]], .)) %>% 
+               Prediction = predict(xgb_fit[[iZ]], .)) %>% 
     select(one_of(fcst_df_vars)) %>% 
     bind_rows(fcst_df)
 }
@@ -466,7 +466,7 @@ fcst_df <- weather_bs %>%
   mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
               scale, center = FALSE) %>% 
     data.frame(.,
-               Demand_pred = predict(xgb_fit[["MASS"]], .)) %>% 
+               Prediction = predict(xgb_fit[["MASS"]], .)) %>% 
     select(one_of(fcst_df_vars)) %>% 
     bind_rows(fcst_df)
 
@@ -475,7 +475,7 @@ fcst_df <- weather_bs %>%
   mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
               scale, center = FALSE) %>% 
     data.frame(.,
-               Demand_pred = predict(xgb_fit[["TOTAL"]], .)) %>% 
+               Prediction = predict(xgb_fit[["TOTAL"]], .)) %>% 
     select(one_of(fcst_df_vars)) %>% 
     bind_rows(fcst_df)
 ```
