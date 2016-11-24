@@ -11,7 +11,7 @@ output:
       collapsed: no
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(
 	echo = TRUE,
 	message = FALSE,
@@ -195,16 +195,14 @@ This project will be broken into several parts.
 
 We use a linearly boosted model for all zones with three days of hourly lagged variables for dry bulb and dew point temperatures. L2-regularization is used to penalise predictors. See the vignettes `boosting-tests.Rmd` and `boosting-with-regularization.Rmd` for a discussion of why this model was chosen.
 
-_Only doing 3-fold CV to speed things up. Have already done model validation in previous docs._
-
 ```{r fit_zones}
 xgb_ctrl <- trainControl(method = "repeatedcv",
-                         number = 3,
+                         number = 5,
                          allowParallel = TRUE)
 
 xgb_grid_linear <- expand.grid(nrounds = 300,
                                alpha = 0,
-                               lambda = c(0, exp(0:6)),
+                               lambda = c(0, exp(0:4)),
                                eta = 0.1)
 
 if (file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
@@ -216,7 +214,6 @@ if (file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
       cat("Fitting model for zone", iZ, "...\n")
       xgb_fit[[iZ]] <- smd %>% 
         filter(Zone == iZ) %>% 
-        # select(Demand, Period, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
         select(Demand, Hour, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
         mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
                   scale, center = FALSE) %>% 
@@ -232,25 +229,6 @@ if (file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
 ```
 
 
-```{r performance_zones}
-results_df <- NULL
-for (iZ in names(xgb_fit)) {
-  results_df <- data.frame(Zone = iZ,
-                           xgb_fit[[iZ]]$results) %>% 
-    bind_rows(results_df, .)
-}
-
-results_df %>% 
-  ggplot(aes(x = lambda, y = RMSE, colour = Zone)) +
-  geom_line() +
-  ggtitle("3-fold CV RMSE by zone") +
-  scale_x_continuous(trans = "log",
-                     labels = function(x) round(x, 0)) +
-  facet_wrap(~Zone, scales = "free_y") +
-  theme(legend.position = "none")
-```
-
-
 ### Aggregated zones
 
 Two aggregated zones need to be forecast. One for the three zones comprising Massachusetts and another for the sum of all eight zones.
@@ -260,7 +238,6 @@ if (!file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
   system.time({
     cat("Fitting model for zone MASS...\n")
     xgb_fit[["MASS"]] <- smd_mass %>% 
-      #select(Demand, Period, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
       select(Demand, Hour, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
       mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
                 scale, center = FALSE) %>% 
@@ -273,7 +250,6 @@ if (!file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
     
     cat("Fitting model for zone TOTAL...\n")
     xgb_fit[["TOTAL"]] <- smd_total %>% 
-      #select(Demand, Period, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
       select(Demand, Hour, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
       mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
                 scale, center = FALSE) %>% 
@@ -290,18 +266,21 @@ if (!file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
 ```
 
 
-```{r performance_agg_zones}
-for (iZ in agg_zones) {
+### Performance
+
+```{r performance_zones}
+results_df <- NULL
+for (iZ in names(xgb_fit)) {
   results_df <- data.frame(Zone = iZ,
                            xgb_fit[[iZ]]$results) %>% 
     bind_rows(results_df, .)
 }
 
 results_df %>% 
-  filter(Zone %in% agg_zones) %>% 
+  mutate(Zone = factor(Zone, levels = all_zones, ordered = T)) %>% # order subplots
   ggplot(aes(x = lambda, y = RMSE, colour = Zone)) +
   geom_line() +
-  ggtitle("3-fold CV RMSE by aggregated zone") +
+  ggtitle("5-fold CV RMSE by zone") +
   scale_x_continuous(trans = "log",
                      labels = function(x) round(x, 0)) +
   facet_wrap(~Zone, scales = "free_y") +
@@ -354,7 +333,7 @@ resid_df <- smd_total %>%
 
 resid_df <- resid_df %>%
   mutate(Residual = Demand - Prediction,
-         Zone = factor(Zone, levels = all_zones, ordered = T))
+         Zone = factor(Zone, levels = all_zones, ordered = T)) # order subplots
 ```
 
 ```{r residual_plots}
@@ -510,7 +489,6 @@ fcst_df %>%
   filter(Simulation == p_sim) %>% 
   ggplot(aes(x=ts, y=Prediction, colour = Zone)) +
   geom_line() +
-  geom_point(aes(shape = Weekend)) + 
   ggtitle("Predicted demand for forecast period.",
           paste("Simulation", p_sim))
 ```
