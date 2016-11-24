@@ -503,7 +503,33 @@ We expect to see correlation in demand between zones. To preserve this correlati
 
 Based on the ACF plots produced earlier, it looks as though correlation only really holds for for two to three days in the residuals. We will use a simple block bootstrapping process, again similar to Hyndman and Shu (2010). All of the historical years of data will be broken into blocks of length 3 days and then randomly sampled. The bootstrapped residual series will then be added to the predicted values. This will be carried out for each simulated season.
 
-**TODO: write another bootstrapping function for this. Should be quick. Then just add the bootstrapped residuals to the predicted demand based off simulated weather seasons.**
+```{r bootstrap_residuals}
+iZ <- "ME"
+x_resid <- resid_df %>% 
+  filter(Zone == iZ) %>% 
+  select(Residual, Date, Period)
+x_fcst <- fcst_df %>%
+  filter(Zone == iZ,
+         Simulation == 1)
+block_length <- 4
+
+# So need to group by Zone and Simulation when bootstrapping
+n_periods <- length(unique(x_resid$Period))
+n_days <- as.numeric(max(x_resid$Date) - min(x_resid$Date))
+n_blocks <- ceiling(n_days/block_length)
+
+x_resid$block <- rep(1:n_blocks, each = n_periods * block_length)[1:dim(x_resid)[1]]
+
+fcst_n_days <- as.numeric(fcst_end_date - fcst_start_date)
+fcst_n_blocks <- ceiling(fcst_n_days/block_length)
+
+
+
+#x_resid <- filter(x_resid, block %in% sample(1:n_blocks, fcst_n_blocks))
+#fcst_df$block <- rep(bs_block_samples, each = n_perios * block_length)[1:dim(x_fcst)[1]]
+
+```
+
 
 
 # Base forecast reconciliation
