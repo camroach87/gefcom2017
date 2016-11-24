@@ -9,7 +9,10 @@ require(tidyr)
 require(readxl)
 require(lubridate)
 require(ggplot2)
+require(plotly)
 require(caret)
+require(myhelpr)
+
 
 #### Load data ========================
 
@@ -37,9 +40,14 @@ for (iF in files) {
 
 # Add extra variables
 smd <- smd %>% 
-  mutate(Hour = if_else(Hour == 24, 0, Hour),
+  mutate(Date = if_else(Hour == 24, Date + days(1), Date),
+         Hour = if_else(Hour == 24, 0, Hour),
          ts = ymd_h(paste(Date, Hour)),
-         Year = year(ts))
+         Year = year(ts),
+         Month = month(ts, label = TRUE),
+         DoW = wday(ts, label = TRUE),
+         Weekend = ifelse(DoW %in% c("Sat", "Sun"), TRUE, FALSE),
+         DryDewDiff = DryBulb - DewPnt)
 
 
 
@@ -48,31 +56,8 @@ smd <- smd %>%
 # TODO: Use holidays data frame to add dummy variable for holiday in smd data 
 # frame
 #
+# TODO: Add day of week variable
+#
 # TODO: Check if some holidays have a bigger impact on energy than others -
 # check boxplot
 
-
-# Some plots
-smd %>% 
-  filter(Year == 2015) %>% 
-  ggplot(aes(x = DryBulb, y = Demand)) +
-  geom_point() +
-  geom_smooth() +
-  facet_wrap(~Zone) +
-  ggtitle("Demand and dry bulb temperature")
-
-smd %>% 
-  filter(Year == 2015) %>% 
-  ggplot(aes(x = DewPnt, y = Demand)) +
-  geom_point() +
-  geom_smooth() +
-  facet_wrap(~Zone) +
-  ggtitle("Demand and dew point temperature")
-
-smd %>% 
-  filter(Year == 2015) %>% 
-  ggplot(aes(x = DewPnt, y = DryBulb)) +
-  geom_point() +
-  geom_smooth() +
-  facet_wrap(~Zone) +
-  ggtitle("Dry bulb and dew point temperature")
