@@ -18,11 +18,6 @@ load_smd_data <- function(load_zones, root_dir = ".", ignore_cache = FALSE) {
     load(file.path(root_dir, "cache/smd_data.Rdata"))
   } else {
     # load raw data and then cache smd data frame
-    holidays <- read.csv(file.path(root_dir, "data/holidays/holidays.csv"),
-                         stringsAsFactors = FALSE) %>%
-      mutate(Date = mdy(Date, tz="UTC"))
-
-
     smd <- NULL
     files <- list.files(file.path(root_dir, "data/smd"))
     for (iF in files) {
@@ -39,23 +34,12 @@ load_smd_data <- function(load_zones, root_dir = ".", ignore_cache = FALSE) {
       }
     }
 
-    # Add holidays
-    smd <- left_join(smd, holidays) %>%
-      mutate(Holiday = if_else(is.na(Holiday), "NH", Holiday),
-             Holiday_flag = if_else(Holiday == "NH", FALSE, TRUE))
+    # Add holidays and calendar variables
+    smd <- get_calendar_vars(smd, root_dir)
 
-    # Calculate required variables
+    # Add any remaining variables
     smd <- smd %>%
-      mutate(Date = if_else(Hour == 24, Date + days(1), Date),
-             Hour = if_else(Hour == 24, 0, Hour),
-             ts = ymd_h(paste(Date, Hour)),
-             Period = factor(smd$Hour, levels = 1:24, ordered = FALSE),
-             Year = year(ts),
-             Month = factor(month(ts, label = TRUE), ordered = FALSE),
-             DoW = factor(wday(ts, label = TRUE), ordered = FALSE),
-             DoY = yday(ts),
-             Weekend = ifelse(DoW %in% c("Sat", "Sun"), TRUE, FALSE),
-             DryDewDiff = DryBulb - DewPnt)
+      mutate(DryDewDiff = DryBulb - DewPnt)
 
     # cache smd data frame for speedy loading
     dir.create(file.path(root_dir, "cache"),

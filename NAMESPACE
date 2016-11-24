@@ -2,6 +2,7 @@
 
 export(clean_smd_data)
 export(dbl_block_bs)
+export(get_calendar_vars)
 export(get_lagged_vars)
 export(load_smd_data)
 export(pinball_loss)
