@@ -403,7 +403,8 @@ Historical weather data will be bootstrapped in blocks that preserve intra-day w
 bs_dates <- dbl_block_bs(smd$Date,
                          start_date = fcst_start_date,
                          end_date = fcst_end_date,
-                         n_sims = 1000, 
+                         #n_sims = 1000,
+                         n_sims = 100, 
                          avg_block_len = 14,
                          delta_loc = 3,
                          delta_len = 3)
@@ -503,31 +504,35 @@ We expect to see correlation in demand between zones. To preserve this correlati
 
 Based on the ACF plots produced earlier, it looks as though correlation only really holds for for two to three days in the residuals. We will use a simple block bootstrapping process, again similar to Hyndman and Shu (2010). All of the historical years of data will be broken into blocks of length 3 days and then randomly sampled. The bootstrapped residual series will then be added to the predicted values. This will be carried out for each simulated season.
 
+The hours when DST commence and end have been filtered from the data. This means some days will only have 23 residuals avaialable. These days should be filtered. We could simulate the residual for this hour, but it's probably cleaner just removing this day. It does create a break in the residual series but I doubt the impact will be significant. Effectively, it's just another block break point.
+
+There may also be a block at the end of the time series that is not the same length as the others due. This block is omitted.
+
 ```{r bootstrap_residuals}
-iZ <- "ME"
-x_resid <- resid_df %>% 
-  filter(Zone == iZ) %>% 
-  select(Residual, Date, Period)
-x_fcst <- fcst_df %>%
-  filter(Zone == iZ,
-         Simulation == 1)
-block_length <- 4
+fcst_df <- fcst_df %>% 
+  group_by(Zone, Simulation) %>% 
+  do(resid_block_bs(resid_df, ., block_length = 4))
 
-# So need to group by Zone and Simulation when bootstrapping
-n_periods <- length(unique(x_resid$Period))
-n_days <- as.numeric(max(x_resid$Date) - min(x_resid$Date))
-n_blocks <- ceiling(n_days/block_length)
+fcst_df %>% 
+  ggplot(aes(x = DoY, y = Residual)) +
+  geom_point(shape = 21, alpha = 0.15) +
+  geom_smooth() +
+  facet_wrap(~Zone, scales = "free_y") +
+  ggtitle("Simulated residuals across forecast period")
 
-x_resid$block <- rep(1:n_blocks, each = n_periods * block_length)[1:dim(x_resid)[1]]
+fcst_df %>% 
+  ggplot(aes(x = Hour, y = Residual)) +
+  geom_point(shape = 21, alpha = 0.15) +
+  geom_smooth(se = F) +
+  facet_wrap(~Zone, scales = "free_y") +
+  ggtitle("Simulated residuals across day")
 
-fcst_n_days <- as.numeric(fcst_end_date - fcst_start_date)
-fcst_n_blocks <- ceiling(fcst_n_days/block_length)
-
-
-
-#x_resid <- filter(x_resid, block %in% sample(1:n_blocks, fcst_n_blocks))
-#fcst_df$block <- rep(bs_block_samples, each = n_perios * block_length)[1:dim(x_fcst)[1]]
-
+fcst_df %>% 
+  ggplot(aes(x = Demand, y = Residual)) +
+  geom_point(shape = 21, alpha = 0.15) +
+  geom_smooth(se = F) +
+  facet_wrap(~Zone, scales = "free") +
+  ggtitle("Simulated residuals and demand")
 ```
 
 
