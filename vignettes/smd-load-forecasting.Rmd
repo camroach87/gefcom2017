@@ -614,12 +614,14 @@ for (iZ in all_zones) {
                 mutate(Week = week(ts)),
               aes(x = ts, y = Demand, colour = Quantile)) +
     geom_point(data = historical_plot_data %>% 
-                mutate(Week = week(ts)),
+                 mutate(Week = week(ts)),
                aes(x = ts, y = Demand),
                shape = 21) +
     facet_wrap(~Week, scales = "free", ncol = 1) +
     ggtitle("Historical demand and quantile forecasts.",
-            paste("Zone:", iZ))
+            paste("Zone:", iZ)) +
+    theme(strip.background = element_blank(),
+          strip.text.x = element_blank())
   print(p)
 }
 ```
