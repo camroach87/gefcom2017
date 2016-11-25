@@ -295,8 +295,8 @@ Later residuals will be bootstrapped and added to model predictions. Here we cal
 ```{r calc_residuals}
 # Manually specify which variables we want to avoid including predictors 
 # in case aggregated zones use different predictors.
-resid_df_vars <- c("ts", "Date", "DoY", "Year", "Hour", "Period", "Zone", 
-                  "Holiday", "Holiday_flag", "Demand", "Prediction")
+resid_df_vars <- c("ts", "Date", "DoY", "DoW", "Year", "Hour", "Period",
+                   "Zone", "Holiday", "Holiday_flag", "Demand", "Prediction")
 
 # none of this code is nice :(
 resid_df <- NULL
@@ -414,7 +414,8 @@ weather_bs <- smd %>%
   mutate(ts = ymd_h(paste(Date_seq, Hour))) %>% 
   select(-Date) %>% 
   rename(Date = Date_seq) %>% 
-  get_calendar_vars(.) # need to be recalculated based on sequential dates
+  get_calendar_vars(.) %>% # need to be recalculated based on sequential dates
+  clean_smd_data(.)
 
 weather_bs_mass <- smd_mass %>% 
   mutate(Date = as.Date(Date)) %>% 
@@ -422,7 +423,8 @@ weather_bs_mass <- smd_mass %>%
   mutate(ts = ymd_h(paste(Date_seq, Hour))) %>% 
   select(-Date) %>% 
   rename(Date = Date_seq) %>% 
-  get_calendar_vars(.) # need to be recalculated based on sequential dates
+  get_calendar_vars(.) %>%  # need to be recalculated based on sequential dates
+  clean_smd_data(.)
 
 weather_bs_total <- smd_total %>% 
   mutate(Date = as.Date(Date)) %>% 
@@ -430,27 +432,24 @@ weather_bs_total <- smd_total %>%
   mutate(ts = ymd_h(paste(Date_seq, Hour))) %>% 
   select(-Date) %>% 
   rename(Date = Date_seq) %>% 
-  get_calendar_vars(.) # need to be recalculated based on sequential dates
+  get_calendar_vars(.) %>% # need to be recalculated based on sequential dates
+  clean_smd_data(.)
 
 
 
-####################################################################################
-### Predictions
-### TODO: Turn into function. Gets used above as well. 
-###       there are some minor differences though so be careful
-### Inputs: x, scale_vars
-### Use: weather_bs %>%
-###          group_by(Zone) %>% 
-###          do(predict_zone(.)) %>% 
-###          bind_rows(fcst_df)
-####################################################################################
 
-# not interested in demand because underlying weather/calendar variables have 
-# changed after bootstrapping
-fcst_df_vars <- c("Simulation", "ts", "Date_seq", "DoY", "Year", "Hour",
-                  "Period", "Zone", "Holiday", "Holiday_flag", "Weekend", 
-                  "Prediction")
-fcst_df <- NULL
+
+
+
+# TODO: Might want to turn below into a function since a similar version is used
+# above as well. Not interested in demand because underlying weather/calendar
+# variables have changed after bootstrapping
+
+fcst_bs_df_vars <- c("Simulation", "ts", "Date_seq", "DoY", "DoW", "Year", 
+                     "Hour", "Period", "Zone", "Holiday", "Holiday_flag",
+                     "Weekend", "Prediction")
+
+fcst_bs_df <- NULL
 for (iZ in load_zones) {
   # remember to scale predictor data again!
   fcst_df <- weather_bs %>% 
