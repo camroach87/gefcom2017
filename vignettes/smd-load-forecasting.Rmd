@@ -39,7 +39,7 @@ load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
 load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
 agg_zones <- c("MASS", "TOTAL")
 all_zones <- c(load_zones, agg_zones)
-
+n_sims <- 100
 fcst_start_date <- dmy("1/5/2016")
 fcst_end_date <- dmy("1/6/2016") - 1
 
@@ -403,8 +403,7 @@ Historical weather data will be bootstrapped in blocks that preserve intra-day w
 bs_dates <- dbl_block_bs(smd$Date,
                          start_date = fcst_start_date,
                          end_date = fcst_end_date,
-                         #n_sims = 1000,
-                         n_sims = 100, 
+                         n_sims = n_sims, 
                          avg_block_len = 14,
                          delta_loc = 3,
                          delta_len = 3)
