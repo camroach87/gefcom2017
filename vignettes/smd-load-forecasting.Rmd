@@ -216,8 +216,8 @@ if (file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
       xgb_fit[[iZ]] <- smd %>% 
         filter(Zone == iZ) %>% 
         select(Demand, Hour, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
-        mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-                  scale, center = FALSE) %>% 
+        #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+        #          scale, center = FALSE) %>% 
         train(Demand ~ . ,
               data = .,
               method="xgbLinear",
@@ -240,8 +240,8 @@ if (!file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
     cat("Fitting model for zone MASS...\n")
     xgb_fit[["MASS"]] <- smd_mass %>% 
       select(Demand, Hour, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
-      mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-                scale, center = FALSE) %>% 
+      #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+      #          scale, center = FALSE) %>% 
       train(Demand ~ . ,
             data = .,
             method="xgbLinear",
@@ -252,8 +252,8 @@ if (!file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
     cat("Fitting model for zone TOTAL...\n")
     xgb_fit[["TOTAL"]] <- smd_total %>% 
       select(Demand, Hour, DoY, DoW, starts_with("DryBulb"), starts_with("DewPnt")) %>%
-      mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-                scale, center = FALSE) %>% 
+      #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+      #          scale, center = FALSE) %>% 
       train(Demand ~ . ,
             data = .,
             method="xgbLinear",
@@ -305,8 +305,8 @@ for (iZ in load_zones) {
   # remember to scale predictor data again!
   resid_df <- smd %>% 
     filter(Zone == iZ) %>% 
-    mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-              scale, center = FALSE) %>% 
+    #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+    #          scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[[iZ]], .)) %>% 
     select(one_of(resid_df_vars)) %>% 
@@ -315,8 +315,8 @@ for (iZ in load_zones) {
 
 # MASS predictions
 resid_df <- smd_mass %>% 
-  mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-              scale, center = FALSE) %>% 
+  #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+  #            scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[["MASS"]], .)) %>% 
     select(one_of(resid_df_vars)) %>% 
@@ -324,8 +324,8 @@ resid_df <- smd_mass %>%
 
 # TOTAL predictions
 resid_df <- smd_total %>% 
-  mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-              scale, center = FALSE) %>% 
+  #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+  #            scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[["TOTAL"]], .)) %>% 
     select(one_of(resid_df_vars)) %>% 
@@ -400,6 +400,8 @@ and spatial correlations such as,
 
 Historical weather data will be bootstrapped in blocks that preserve intra-day weather correlation and seasonal weather correlation. Here we use a similar method to Hyndman and Shu (2010) (see bootstrapping doc for more info). Simulated seasons are then input into the model that was previously fitted for each zone.
 
+**TODO: Have removed scaling from variables as scaling the bootstrapped data causes issues. It means we are scaling the training data by a different amount to the data used for bootstrap predictions. Perhaps there is a way to do scaling (think about it), but ignoring for the moment because it causes issues.**
+
 ```{r bootstrap_weather}
 bs_dates <- dbl_block_bs(smd$Date,
                          start_date = fcst_start_date,
@@ -455,8 +457,8 @@ for (iZ in load_zones) {
   # remember to scale predictor data again!
   fcst_bs_df <- weather_bs %>% 
     filter(Zone == iZ) %>% 
-    mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-              scale, center = FALSE) %>% 
+    #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+    #          scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[[iZ]], .)) %>% 
     select(one_of(fcst_bs_df_vars)) %>% 
@@ -465,8 +467,8 @@ for (iZ in load_zones) {
 
 # MASS predictions
 fcst_bs_df <- weather_bs_mass %>% 
-  mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-              scale, center = FALSE) %>% 
+  #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+  #            scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[["MASS"]], .)) %>% 
     select(one_of(fcst_bs_df_vars)) %>% 
@@ -474,8 +476,8 @@ fcst_bs_df <- weather_bs_mass %>%
 
 # TOTAL predictions
 fcst_bs_df <- weather_bs_total %>% 
-  mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-              scale, center = FALSE) %>% 
+  #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+  #            scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[["TOTAL"]], .)) %>% 
     select(one_of(fcst_bs_df_vars)) %>% 
