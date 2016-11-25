@@ -509,7 +509,8 @@ There may also be a block at the end of the time series that is not the same len
 ```{r bootstrap_residuals}
 fcst_bs_df <- fcst_bs_df %>% 
   group_by(Zone, Simulation) %>% 
-  do(resid_block_bs(resid_df, ., block_length = 4))
+  do(resid_block_bs(resid_df, ., block_length = 4)) %>% 
+  ungroup()
 
 fcst_bs_df %>% 
   mutate(Zone = factor(Zone, levels = all_zones, ordered = T)) %>% # plot order
