@@ -1,5 +1,5 @@
 ---
-title: "SMD Boosting Models"
+title: "GEFCom 2017 demand forecasting"
 author: "Cameron Roach"
 output:
   pdf_document:
