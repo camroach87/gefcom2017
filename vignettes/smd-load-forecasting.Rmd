@@ -527,13 +527,33 @@ fcst_bs_df %>%
   geom_smooth(se = F) +
   facet_wrap(~Zone, scales = "free_y") +
   ggtitle("Simulated residuals across day")
+```
 
-fcst_df %>% 
-  ggplot(aes(x = Demand, y = Residual)) +
-  geom_point(shape = 21, alpha = 0.15) +
-  geom_smooth(se = F) +
-  facet_wrap(~Zone, scales = "free") +
-  ggtitle("Simulated residuals and demand")
+
+## Combining predictions and residuals
+
+Given our predictions and simulated residuals we can add them to obtain the final simulated demand forecasts.
+
+**TODO: Check performance when no residuals used (set fcst_bs_df$Residual = 0)**
+
+
+```{r combine_pred_resid}
+fcst_bs_df <- fcst_bs_df %>% 
+  mutate(Prediction_adj = Prediction + Residual)
+```
+
+```{r plot_combine_pred_resid, fig.height=12}
+fcst_bs_df %>%
+  filter(Simulation == p_sim) %>% 
+  select(ts, Prediction, Prediction_adj, Zone) %>% 
+  gather(var, val, -c(ts, Zone)) %>% 
+  ggplot(aes(x=ts, y=val, colour = Zone, linetype = var)) +
+  geom_line() +
+  scale_linetype_manual(values = c("Prediction_adj" = "solid",
+                                   "Prediction" = "dashed")) +
+  #facet_wrap(~Zone, scales = "free_y", ncol = 2) +
+  ggtitle("Predicted demand and adjusted demand for forecast period.",
+          paste("Simulation", p_sim))
 ```
 
 
@@ -542,13 +562,65 @@ fcst_df %>%
 
 R's `hts` package can be used to reconcile the means of heirarchical forecasts. Since we are forecasting the conditional mean on the bootstrap samples we can use `hts` to reconcile the aggregated means and zone means. Empirical quantiles may then be calculated from these reconciled forecasts for each zone and aggregated zone.
 
+**TODO**
 
 # Quantile calculations
 
 Quantiles may be calculated for each hour of each day by simply calculating the empirical quantiles of the bootstrapped demand traces. R's `quantile` function is all that is needed for this.
 
+```{r calc_quantiles}
+quantile_fcst <- fcst_bs_df %>% 
+  group_by(Zone, ts) %>% 
+  summarise(Q10 = quantile(Prediction_adj, 0.1),
+            Q20 = quantile(Prediction_adj, 0.2),
+            Q30 = quantile(Prediction_adj, 0.3),
+            Q40 = quantile(Prediction_adj, 0.4),
+            Q50 = quantile(Prediction_adj, 0.5),
+            Q60 = quantile(Prediction_adj, 0.6),
+            Q70 = quantile(Prediction_adj, 0.7),
+            Q80 = quantile(Prediction_adj, 0.8),
+            Q90 = quantile(Prediction_adj, 0.9)) %>% 
+  ungroup() %>% 
+  # TODO: Make sure these dates and hours are correct after fixing everything
+  # from start.
+  mutate(Date = date(ts),
+         Hour = as.numeric(hour(ts)),
+         Date = if_else(Hour == 0, Date - days(1), Date),
+         Hour = if_else(Hour == 0, 24, Hour))
+```
+
 
 # Forecast validation
+
+**TODO: This section should be moved to another document as we will not have actuals for the real forecast period.**
+
+The below plots show where the actual values fall on the quantile forecasts. We show the actuals during the forecast period and where they fall on the quantile forecasts. _Remember: can't use actuals from previous years as day of week effects/holidays may be different._
+
+```{r hist_and_quantile_plots, fig.height = 13, fig.width = 8}
+for (iZ in all_zones) {
+  historical_plot_data <- resid_df %>% 
+    filter(Zone == iZ,
+           date(ts) >= fcst_start_date,
+           date(ts) <= fcst_end_date)
+  
+  p <- ggplot() +
+    geom_line(data = quantile_fcst %>% 
+                filter(Zone == iZ) %>% 
+                select(ts, starts_with("Q")) %>% 
+                gather(Quantile, Demand, -ts) %>% 
+                mutate(Week = week(ts)),
+              aes(x = ts, y = Demand, colour = Quantile)) +
+    geom_point(data = historical_plot_data %>% 
+                mutate(Week = week(ts)),
+               aes(x = ts, y = Demand),
+               shape = 21) +
+    facet_wrap(~Week, scales = "free", ncol = 1) +
+    ggtitle("Historical demand and quantile forecasts.",
+            paste("Zone:", iZ))
+  print(p)
+}
+```
+
 
 * Calculate pinabll loss scores for an out of sample month.
 * Check pinball loss scores for the month by year.
@@ -558,4 +630,4 @@ Quantiles may be calculated for each hour of each day by simply calculating the 
 
 # Output
 
-Performance will be assessed using the pinball loss function.
+Forecasts are output to excel in the required format.
