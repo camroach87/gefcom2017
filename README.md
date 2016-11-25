@@ -3,6 +3,7 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
 
 ## To do
 
+* New Year Day holiday only assigned to first hour of new year's day. Not sure why. FIX.
 * When doing forecasts in March, what happens on DST day? Does forecast data frame return 23 or 24 values? What is the impact on the residual bootstrapping function which always expects 24 periods? TEST!
 * Check dates and hour are correct. does dmy_h give the original time-series? Should I switch to HB instead of HE?
 * What happens when bootstrapping for those days missing an hour? Does that mean no value is produced for that hour? Maybe should filter out those days from the bootstrapping process? Actually no - it just means there will be a few less values when calculating the quantiles for that hour and day (or days that use DST days in their bootstrapped samples). ACTUALLY what if data is getting out of sync with time? If
