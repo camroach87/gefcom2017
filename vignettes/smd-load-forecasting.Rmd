@@ -452,39 +452,39 @@ fcst_bs_df_vars <- c("Simulation", "ts", "Date_seq", "DoY", "DoW", "Year",
 fcst_bs_df <- NULL
 for (iZ in load_zones) {
   # remember to scale predictor data again!
-  fcst_df <- weather_bs %>% 
+  fcst_bs_df <- weather_bs %>% 
     filter(Zone == iZ) %>% 
     mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
               scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[[iZ]], .)) %>% 
-    select(one_of(fcst_df_vars)) %>% 
-    bind_rows(fcst_df)
+    select(one_of(fcst_bs_df_vars)) %>% 
+    bind_rows(fcst_bs_df)
 }
 
 # MASS predictions
-fcst_df <- weather_bs_mass %>% 
+fcst_bs_df <- weather_bs_mass %>% 
   mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
               scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[["MASS"]], .)) %>% 
-    select(one_of(fcst_df_vars)) %>% 
-    bind_rows(fcst_df)
+    select(one_of(fcst_bs_df_vars)) %>% 
+    bind_rows(fcst_bs_df)
 
 # TOTAL predictions
-fcst_df <- weather_bs_total %>% 
+fcst_bs_df <- weather_bs_total %>% 
   mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
               scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[["TOTAL"]], .)) %>% 
-    select(one_of(fcst_df_vars)) %>% 
-    bind_rows(fcst_df)
+    select(one_of(fcst_bs_df_vars)) %>% 
+    bind_rows(fcst_bs_df)
 ```
 
 
-```{r}
-p_sim <- sample(unique(fcst_df$Simulation), 1)
-fcst_df %>%
+```{r plot_fitted_values}
+p_sim <- sample(unique(fcst_bs_df$Simulation), 1)
+fcst_bs_df %>%
   filter(Simulation == p_sim) %>% 
   ggplot(aes(x=ts, y=Prediction, colour = Zone)) +
   geom_line() +
@@ -507,18 +507,20 @@ The hours when DST commence and end have been filtered from the data. This means
 There may also be a block at the end of the time series that is not the same length as the others due. This block is omitted.
 
 ```{r bootstrap_residuals}
-fcst_df <- fcst_df %>% 
+fcst_bs_df <- fcst_bs_df %>% 
   group_by(Zone, Simulation) %>% 
   do(resid_block_bs(resid_df, ., block_length = 4))
 
-fcst_df %>% 
+fcst_bs_df %>% 
+  mutate(Zone = factor(Zone, levels = all_zones, ordered = T)) %>% # plot order
   ggplot(aes(x = DoY, y = Residual)) +
   geom_point(shape = 21, alpha = 0.15) +
   geom_smooth() +
   facet_wrap(~Zone, scales = "free_y") +
   ggtitle("Simulated residuals across forecast period")
 
-fcst_df %>% 
+fcst_bs_df %>% 
+  mutate(Zone = factor(Zone, levels = all_zones, ordered = T)) %>% # plot order
   ggplot(aes(x = Hour, y = Residual)) +
   geom_point(shape = 21, alpha = 0.15) +
   geom_smooth(se = F) +
