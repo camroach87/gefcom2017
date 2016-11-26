@@ -18,10 +18,8 @@ get_calendar_vars <- function(x, root_dir = ".") {
   x <- left_join(x, holidays, by = "Date") %>%
     mutate(Holiday = if_else(is.na(Holiday), "NH", Holiday),
            Holiday_flag = if_else(Holiday == "NH", FALSE, TRUE),
-           Date = if_else(Hour == 24, Date + days(1), Date),
-           Hour = if_else(Hour == 24, 0, Hour),
-           ts = ymd_h(paste(Date, Hour)),
-           Period = factor(Hour, levels = 0:23, ordered = FALSE),
+           ts = ymd_h(paste(Date, Hour - 1)), # hour beginning for lubridate
+           Period = factor(Hour, levels = 1:24, ordered = FALSE),
            Year = year(ts),
            Month = factor(month(ts, label = TRUE), ordered = FALSE),
            DoW = factor(wday(ts, label = TRUE), ordered = FALSE),

@@ -88,13 +88,6 @@ smd_total <- smd_total %>%
   filter(Year >= 2011)
 ```
 
-# TODO
-
-* Think about converting Hour from hour ending to hour beginning. Ensures that the date and hour match up.
-* Maybe have 2 models. One for DST months and another for non-daylight savings times? When DST starts on March 8th, the time of the peak shifts back one period (from 19 to 20). So, basically, it looks like demand is behaving as before (peak still occurs at same non-DST time), but because we have shifted to DST it looks like the peak has been shifted back by an hour. This may be affecting the model fit.
-* IMPORTANT: Add in day of year or day of season/modelling period to models.
-
-
 # Introduction
 
 This notebook summarises the selected model and forecasts for the 2017 GEFCom-D competition.
@@ -448,8 +441,8 @@ weather_bs_total <- smd_total %>%
 # above as well. Not interested in demand because underlying weather/calendar
 # variables have changed after bootstrapping
 
-fcst_bs_df_vars <- c("Simulation", "ts", "Date_seq", "DoY", "DoW", "Year", 
-                     "Hour", "Period", "Zone", "Holiday", "Holiday_flag",
+fcst_bs_df_vars <- c("Simulation", "ts", "Date", "Hour", "DoY", "DoW", "Year", 
+                     "Month", "Period", "Zone", "Holiday", "Holiday_flag",
                      "Weekend", "Prediction")
 
 fcst_bs_df <- NULL
@@ -573,7 +566,7 @@ Quantiles may be calculated for each hour of each day by simply calculating the 
 
 ```{r calc_quantiles}
 quantile_fcst <- fcst_bs_df %>% 
-  group_by(Zone, ts) %>% 
+  group_by(Zone, ts, Date, Hour) %>% 
   summarise(Q10 = quantile(Prediction_adj, 0.1),
             Q20 = quantile(Prediction_adj, 0.2),
             Q30 = quantile(Prediction_adj, 0.3),
@@ -583,13 +576,7 @@ quantile_fcst <- fcst_bs_df %>%
             Q70 = quantile(Prediction_adj, 0.7),
             Q80 = quantile(Prediction_adj, 0.8),
             Q90 = quantile(Prediction_adj, 0.9)) %>% 
-  ungroup() %>% 
-  # TODO: Make sure these dates and hours are correct after fixing everything
-  # from start.
-  mutate(Date = date(ts),
-         Hour = as.numeric(hour(ts)),
-         Date = if_else(Hour == 0, Date - days(1), Date),
-         Hour = if_else(Hour == 0, 24, Hour))
+  ungroup()
 ```
 
 
