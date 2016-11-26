@@ -1,0 +1,200 @@
+---
+title: "SMD exploration 1"
+output: 
+  html_notebook: 
+    number_sections: yes
+    toc: yes
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+rm(list=ls())
+
+require(dplyr)
+require(tidyr)
+require(readxl)
+require(lubridate)
+require(ggplot2)
+require(plotly)
+require(caret)
+require(myhelpr)
+
+source("../R/loadData.R")
+
+load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
+load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
+
+smd <- load_smd_data(root_dir = "./..", load_zones)
+```
+
+# Introduction
+
+This document shows some interesting plots of the data. Also some dumb plots.
+
+
+# Weather variables
+
+## Temperature and demand
+
+```{r}
+smd %>% 
+  filter(Year == 2015) %>% 
+  ggplot(aes(x = DryBulb, y = Demand, colour = Weekend)) +
+  geom_point(shape = 21, alpha = 0.1) +
+  geom_smooth() +
+  facet_wrap(~Zone) +
+  ggtitle("Demand and dry bulb temperature")
+
+smd %>% 
+  filter(Year == 2015) %>% 
+  ggplot(aes(x = DewPnt, y = Demand, colour = Weekend)) +
+  geom_point(shape = 21, alpha = 0.1) +
+  geom_smooth() +
+  facet_wrap(~Zone) +
+  ggtitle("Demand and dew point temperature")
+
+smd %>% 
+  filter(Year == 2015) %>% 
+  ggplot(aes(x = DewPnt, y = DryBulb, colour = Weekend)) +
+  geom_point(shape = 21, alpha = 0.1) +
+  geom_smooth() +
+  facet_wrap(~Zone) +
+  ggtitle("Dry bulb and dew point temperature")
+```
+
+
+## Differencing between dry bulb and dew point
+
+```{r}
+smd %>% 
+  filter(Year == 2015) %>% 
+  select(Zone, DewPnt, DryBulb, DryDewDiff) %>% 
+  gather(TempType, Temp, -c(DryDewDiff, Zone)) %>% 
+  ggplot(aes(x = DryDewDiff, y = Temp, colour=TempType)) +
+  geom_point(shape = 21, alpha = 0.1) +
+  geom_smooth() +
+  facet_wrap(~Zone) +
+  ggtitle("Dry bulb and dew point difference correlations")
+
+smd %>% 
+  filter(Year == 2015) %>% 
+  ggplot(aes(x = DryDewDiff, y = Demand, colour = Weekend)) +
+  geom_point(shape = 21, alpha = 0.1) +
+  geom_smooth() +
+  facet_wrap(~Zone, scale = "free_y") +
+  ggtitle("Demand and difference betweeen dry bulb and dew point temperature")
+```
+
+## Day of week, temperature and demand
+
+I'm pretty sure this plot is dumb.
+
+```{r}
+smd %>% 
+  filter(Year == 2015) %>% 
+  ggplot(aes(x = DryBulb, y = Demand, colour = DoW)) +
+  #geom_point(shape = 21, alpha = 0.3) +
+  geom_smooth(se = FALSE) +
+  facet_wrap(~Zone, scales = "free_y") +
+  ggtitle("Demand and dry bulb temperature")
+```
+
+
+# Demand profiles
+
+## Averaged profiles
+
+First plot shows average across the whole week. Second plot shows average for each day.
+
+```{r}
+smd %>% 
+  group_by(Zone, Hour) %>% 
+  summarise(Demand = mean(Demand)) %>% 
+  ggplot(aes(x=Hour, y=Demand)) +
+  geom_line() +
+  facet_wrap(~Zone) +
+  ggtitle("Average daily demand profiles")
+
+smd %>% 
+  group_by(Zone, Hour, DoW) %>% 
+  summarise(Demand = mean(Demand)) %>% 
+  ggplot(aes(x=Hour, y=Demand, colour=DoW)) +
+  geom_line() +
+  facet_wrap(~Zone, scales="free_y") +
+  ggtitle("Average daily demand profiles")
+```
+
+## Daylight savings impact
+
+Is there any evidence of daylight savings changing demand behaviour from month to month? Want to check if ramp up in morning and decrease at night are still happening in the same place. Can't compare peak as there is clear evidence of solar (which pushes the peak  back).
+
+```{r}
+for (iZ in load_zones) {
+  cc <- scales::seq_gradient_pal("blue", "red", "Lab")(seq(0,1,length.out=12))
+
+  p <- smd %>% 
+    filter(Zone == iZ) %>% 
+    group_by(Month, Hour) %>% 
+    summarise(Demand = mean(Demand)) %>% 
+    ggplot(aes(x=Hour, y=Demand, colour=Month)) +
+    geom_line() +
+    scale_colour_manual(values=cc) +
+    ggtitle(paste("Average daily demand profiles by month for", iZ))
+  print(p)
+}
+```
+
+
+## Demand comparison between months
+
+```{r}
+for (iZ in load_zones) {
+  cc <- scales::seq_gradient_pal("blue", "red", "Lab")(seq(0,1,length.out=12))
+
+  p <- smd %>% 
+    filter(Zone == iZ) %>% 
+    group_by(Month, Hour) %>% 
+    summarise(Demand = mean(Demand)) %>% 
+    ggplot(aes(x=Hour, y=Demand, colour=Month)) +
+    geom_line() +
+    scale_colour_manual(values=cc) +
+    facet_wrap(~Month) +
+    ggtitle(paste("Average daily demand profiles by month for", iZ))
+  print(p)
+}
+```
+
+## Empirical percentiles of demand profiles
+
+```{r}
+for (iZ in load_zones) {
+  quantiles <- 1:9/10
+  p <- smd %>% 
+    filter(Zone == iZ) %>% 
+    group_by(Hour, Month) %>% 
+    na.omit() %>% 
+    do(data_frame(
+      Demand = quantile(na.omit(.$Demand), quantiles),
+      Quantile = quantiles)) %>% 
+    ggplot(aes(x=Hour, y=Demand, colour=Quantile, group=Quantile)) +
+    geom_line() +
+    facet_wrap(~Month) +
+    ggtitle(paste("Average daily demand profiles by month for", iZ))
+  print(p)
+}
+```
+
+
+# Public holidays
+
+Questions to ask:
+
+* Do certain public holidays have a bigger impact than others?
+* How do public holidays compare to weekend days? Does this mean that some public holidays can be modelled as weekends (reduces dimensionality)?
+
+** TODO **
