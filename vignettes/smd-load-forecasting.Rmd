@@ -630,16 +630,16 @@ Forecasts are output to excel in the required format.
 sheet_order <- c("CT", "ME", "NEMASSBOST", "NH", "RI", "SEMASS", "VT",
                  "WCMASS", "MASS", "TOTAL")
 
-excel_sheets <- NULL
+excel_output <- NULL
 for (iS in sheet_order) {
-  excel_sheets[[iS]] <- quantile_fcst %>%
+  excel_output[[iS]] <- quantile_fcst %>%
     filter(Zone == iS) %>%
     select(Date, Hour, Q10, Q20, Q30, Q40, Q50, Q60, Q70, Q80, Q90) %>% 
     mutate(Date = format(Date, "%e/%m/%Y"))
 }
 
 dir.create("./output", F, T)
-WriteXLS(excel_sheets,
+WriteXLS(excel_output,
          ExcelFileName = "./output/D1-These boosts are made forecasting.xls")
 ```
 
