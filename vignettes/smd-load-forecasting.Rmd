@@ -15,7 +15,9 @@ output:
 knitr::opts_chunk$set(
 	echo = TRUE,
 	message = FALSE,
-	warning = FALSE
+	warning = FALSE,
+	dev = "png",
+	dpi = 150
 )
 
 rm(list=ls())
@@ -538,7 +540,7 @@ fcst_bs_df <- fcst_bs_df %>%
   mutate(Prediction_adj = Prediction + Residual)
 ```
 
-```{r plot_combine_pred_resid, fig.height=12}
+```{r plot_combine_pred_resid, fig.height=13, fig.width = 9}
 fcst_bs_df %>%
   filter(Simulation == p_sim) %>% 
   select(ts, Prediction, Prediction_adj, Zone) %>% 
@@ -586,7 +588,7 @@ quantile_fcst <- fcst_bs_df %>%
 
 The below plots show where the actual values fall on the quantile forecasts. We show the actuals during the forecast period and where they fall on the quantile forecasts. _Remember: can't use actuals from previous years as day of week effects/holidays may be different._
 
-```{r hist_and_quantile_plots, fig.height = 13, fig.width = 8}
+```{r hist_and_quantile_plots, fig.height = 13, fig.width = 9}
 for (iZ in all_zones) {
   historical_plot_data <- resid_df %>% 
     filter(Zone == iZ,
