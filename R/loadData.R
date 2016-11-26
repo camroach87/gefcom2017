@@ -18,8 +18,9 @@ load_smd_data <- function(root_dir = ".", load_zones) {
   # TODO: Use holidays data frame to add dummy variable for holiday in smd data 
   # frame
   
-  holidays <- read.csv(file.path(root_dir, "data/holidays/holidays.csv")) %>% 
-    mutate(Date = mdy(Date))
+  holidays <- read.csv(file.path(root_dir, "data/holidays/holidays.csv"),
+                       stringsAsFactors = FALSE) %>% 
+    mutate(Date = mdy(Date, tz="UTC"))
   
   
   smd <- NULL
@@ -47,6 +48,11 @@ load_smd_data <- function(root_dir = ".", load_zones) {
            DoW = wday(ts, label = TRUE),
            Weekend = ifelse(DoW %in% c("Sat", "Sun"), TRUE, FALSE),
            DryDewDiff = DryBulb - DewPnt)
+  
+  # Add holidays
+  smd <- full_join(smd, holidays) %>% 
+    mutate(Holiday = if_else(is.na(Holiday), "NH", Holiday),
+           Holiday_flag = if_else(Holiday == "NH", FALSE, TRUE))
   
   return(smd)
 }
