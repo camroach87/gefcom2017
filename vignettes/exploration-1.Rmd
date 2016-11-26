@@ -197,4 +197,12 @@ Questions to ask:
 * Do certain public holidays have a bigger impact than others?
 * How do public holidays compare to weekend days? Does this mean that some public holidays can be modelled as weekends (reduces dimensionality)?
 
-** TODO **
+**TODO: Need to normalise based on demand within the month. Obviously a holiday in a high demand month/zone will have a bigger impact than one in a low demand month/zone!**
+
+```{r}
+smd %>% 
+  filter(Holiday_flag == TRUE) %>% 
+  ggplot(aes(x=Holiday, y=Demand)) +
+  geom_boxplot()
+```
+
