@@ -1,5 +1,6 @@
 ---
 title: "SMD exploration 1"
+author: Cameron Roach
 output: 
   html_notebook: 
     number_sections: yes
@@ -105,7 +106,29 @@ smd %>%
 ```
 
 
-# Demand profiles
+# Demand
+
+## Demand outlier checks
+
+We can see in these plots that there are some clear outliers in the latest data file for 2016 (surprise!).
+
+```{r}
+smd %>% 
+  group_by(Zone, Date) %>% 
+  summarise(Demand = sum(Demand)) %>% 
+  ungroup() %>% 
+  ggplot(aes(x=Date, y=Demand)) +
+  geom_line() +
+  facet_wrap(~Zone) + 
+  ggtitle("Daily demand in each zone")
+
+smd %>% 
+  ggplot(aes(x=Month, y=Demand, colour=Month)) + 
+  geom_boxplot() +
+  facet_wrap(~Zone, scales = "free_y") +
+  ggtitle("Boxplots of demand in each zone by month")
+```
+
 
 ## Averaged profiles
 
@@ -192,17 +215,22 @@ for (iZ in load_zones) {
 
 # Public holidays
 
-Questions to ask:
+It appears as though some public holidays have a bigger impact on demand than others (Christmas Day, Independence day). Need to investigate if this is because of other factors such as falling after a weekend or interaction with holiday periods.
 
-* Do certain public holidays have a bigger impact than others?
-* How do public holidays compare to weekend days? Does this mean that some public holidays can be modelled as weekends (reduces dimensionality)?
+Individual boxplots were also produced for each load zone but gave very similar results.
 
-**TODO: Need to normalise based on demand within the month. Obviously a holiday in a high demand month/zone will have a bigger impact than one in a low demand month/zone!**
+** TODO: How do public holidays compare to weekend days? Does this mean that some public holidays can be modelled as weekends (reduces dimensionality)? **
+
 
 ```{r}
 smd %>% 
+  group_by(Month, Date, Holiday, Holiday_flag) %>% 
+  summarise(Demand = sum(Demand)) %>% 
+  group_by(Month) %>% 
+  mutate(Demand = Demand/mean(Demand)) %>% 
   filter(Holiday_flag == TRUE) %>% 
   ggplot(aes(x=Holiday, y=Demand)) +
-  geom_boxplot()
+  geom_boxplot() +
+  ggtitle(paste("Normalised demand on public holidays"))
 ```
 
