@@ -58,7 +58,34 @@ Additionally, several dummy variables have been calculated. These include,
 * weekend (boolean),
 * dry bulb and dew point temperature differences.
 
+## Output
+
+We wish to produce quantile forecasts (10, 20, ..., 90) for each day in a future month. These forecasts will be produced for each of the zones and also the two aggregated zones (Massachusetts and total of all).
+
+Since we are not provided forecast weather data for the month we will need to rely on a bootstrapping approach to create a distribution.
+
 # Modelling
+
+This project will be broken into several parts.
+
+1. Fit a model using 2010-2016 data. This data contains public holiday information. Test several models using time-series cross-validation.
+2. Bootstrap weather data (all data 2003-2016). Check for any trends - unlikely over that period. Feed bootstrapped data into model.
+3. Calculate quantiles for each day in month of interest based on bootstrapped results.
+4. **TODO** Determine how best to forecast the aggregated zones.
+
+Note that since we are not given forecasts of weather data we will have to rely on a bootstrapping approach to determine quantiles, rather than a quantile regression type of model.
+
+## Model training
+
+
+
+## Bootstrapping
+
+## Quantile calculations
+
+## Aggregated zones
 
 
 # Performance
+
+Performance will be assessed using the pinball loss function.
