@@ -1,0 +1,64 @@
+---
+title: "SMD Boosting Models"
+author: Cameron Roach
+output: 
+  html_notebook: 
+    number_sections: yes
+    toc: yes
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+rm(list=ls())
+
+require(dplyr)
+require(tidyr)
+require(readxl)
+require(lubridate)
+require(ggplot2)
+require(plotly)
+require(caret)
+require(myhelpr)
+
+source("../../R/loadData.R")
+
+load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
+load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
+
+smd <- load_smd_data(root_dir = "./../..", load_zones)
+```
+
+# Introduction
+
+This notebook explores fitting various models to produce quantile forecasts for the 2017 GEFCom-D competition.
+
+Models will be fit using the `xgboost` package. Performance is assessed using time-series cross validation. The performance score is based on the pinball loss function.
+
+## Data
+
+Since this is for the GEFCom-D track of the competition only given data may be used. Hence, we will be able to use data for
+
+* dates and times,
+* holidays,
+* dry bulb temperature,
+* dew point temperature,
+* demand.
+
+Additionally, several dummy variables have been calculated. These include,
+
+* month of year,
+* season,
+* holiday flag (boolean),
+* day of week,
+* weekend (boolean),
+* dry bulb and dew point temperature differences.
+
+# Modelling
+
+
+# Performance
