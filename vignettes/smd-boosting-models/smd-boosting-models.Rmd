@@ -22,6 +22,7 @@ require(readxl)
 require(lubridate)
 require(ggplot2)
 require(plotly)
+require(plotly)
 require(caret)
 require(myhelpr)
 
@@ -33,6 +34,10 @@ load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
 smd <- load_smd_data(root_dir = "./../..", load_zones)
 ```
 
+# TODO
+
+* Think about converting Hour from hour ending to hour beginning. Ensures that the date and hour match up.
+
 # Introduction
 
 This notebook explores fitting various models to produce quantile forecasts for the 2017 GEFCom-D competition.
@@ -43,7 +48,8 @@ Models will be fit using the `xgboost` package. Performance is assessed using ti
 
 Since this is for the GEFCom-D track of the competition only given data may be used. Hence, we will be able to use data for
 
-* dates and times,
+* dates
+* hour ending,
 * holidays,
 * dry bulb temperature,
 * dew point temperature,
@@ -52,11 +58,14 @@ Since this is for the GEFCom-D track of the competition only given data may be u
 Additionally, several dummy variables have been calculated. These include,
 
 * month of year,
+* period of day (1-24, ordered factor),
 * season,
 * holiday flag (boolean),
 * day of week,
 * weekend (boolean),
 * dry bulb and dew point temperature differences.
+
+Period of day should be used in place of Hour in modelling as it is an ordered factor.
 
 ## Output
 
@@ -68,7 +77,7 @@ Since we are not provided forecast weather data for the month we will need to re
 
 This project will be broken into several parts.
 
-1. Fit a model using 2010-2016 data. This data contains public holiday information. Test several models using time-series cross-validation.
+1. Fit a model using 2011-2016 data. This data contains public holiday information. Test several models using time-series cross-validation.
 2. Bootstrap weather data (all data 2003-2016). Check for any trends - unlikely over that period. Feed bootstrapped data into model.
 3. Calculate quantiles for each day in month of interest based on bootstrapped results.
 4. **TODO** Determine how best to forecast the aggregated zones.
@@ -76,6 +85,69 @@ This project will be broken into several parts.
 Note that since we are not given forecasts of weather data we will have to rely on a bootstrapping approach to determine quantiles, rather than a quantile regression type of model.
 
 ## Model training
+
+```{r}
+train_data <- filter(smd,
+                     Year >= 2011,
+                     Year < 2015,
+                     Zone == "ME")
+test_data <- filter(smd,
+                    Year >= 2015,
+                    Zone == "ME")
+
+maeSummary <- function (data,
+                        lev = NULL,
+                        model = NULL) {
+  out <- mean(abs(data$obs - data$pred), na.rm=TRUE)
+  names(out) <- "MAE"
+  out
+}
+
+fitControl <- trainControl(
+  method = "timeslice",
+  initialWindow = ceiling(dim(train_data)[1]*0.7),
+  horizon=24*7,
+  fixedWindow=FALSE,
+  summaryFunction = maeSummary)
+
+smd_fit <- list()
+#mae <- rep(NA, 24)
+
+smd_fit[[1]] <- train(Demand ~ DryBulb + Weekend + Holiday_flag + Period + Month,
+                      data = train_data,
+                      method="lm",
+                      metric="MAE",
+                      maximize = FALSE)#,
+                      #trControl = fitControl)
+
+
+xgb_grid <- expand.grid(nrounds = 500, #the maximum number of iterations
+                        eta = c(0.01,0.1), # shrinkage
+                        max_depth = c(2,6,10),
+                        gamma = 1,
+                        colsample_bytree = 1,
+                        min_child_weight = 1)
+smd_fit[[2]] <- train(Demand ~ DryBulb + Weekend + Holiday_flag + Period + Month,
+                      data = train_data,
+                      method="xgbTree",
+                      metric="MAE",
+                      maximize = FALSE,
+                      tuneGrid = xgb_grid)#,
+                      #trControl = fitControl)
+#mae[i+1] <- model_h[[i+1]]$results$MAE
+```
+
+```{r}
+test_data$Demand_pred1 <- predict(smd_fit[[1]], newdata = test_data)
+test_data$Demand_pred2 <- predict(smd_fit[[2]], newdata = test_data)
+
+test_data %>% 
+  filter(Year == 2015,
+         Month %in% c("Jan", "Feb")) %>% 
+  plot_ly(x = ~ts) %>% 
+  add_trace(y = ~Demand, type = "scatter", mode = "lines") %>% 
+  add_trace(y = ~Demand_pred, type = "scatter", mode = "lines")
+```
 
 
 
