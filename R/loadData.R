@@ -41,6 +41,7 @@ load_smd_data <- function(root_dir = ".", load_zones) {
   # Add extra variables
   smd <- smd %>% 
     mutate(Date = if_else(Hour == 24, Date + days(1), Date),
+           Period = factor(smd$Hour, levels = 1:24, ordered = TRUE),
            Hour = if_else(Hour == 24, 0, Hour),
            ts = ymd_h(paste(Date, Hour)),
            Year = year(ts),
