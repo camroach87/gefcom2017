@@ -5,7 +5,8 @@ output:
   html_notebook: 
     number_sections: yes
     toc: yes
-    toc_float: true
+    toc_float:
+      collapsed: false
 ---
 
 ```{r setup, include=FALSE}
