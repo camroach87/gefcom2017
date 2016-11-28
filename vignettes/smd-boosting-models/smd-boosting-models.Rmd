@@ -23,7 +23,7 @@ require(readxl)
 require(lubridate)
 require(ggplot2)
 require(plotly)
-require(plotly)
+require(DT)
 require(caret)
 require(myhelpr)
 
@@ -38,6 +38,7 @@ smd <- load_smd_data(root_dir = "./../..", load_zones)
 # TODO
 
 * Think about converting Hour from hour ending to hour beginning. Ensures that the date and hour match up.
+* It looks like there is one observation missing early March and two observations being grouped together at beginning of November for each year and zone. Most likely daylight savings. Check if this is in the source data or if it is caused by aggregation in the load_smd_data function.
 
 # Introduction
 
@@ -88,13 +89,20 @@ Note that since we are not given forecasts of weather data we will have to rely 
 ## Model training
 
 ```{r}
+iZ <- "SEMASS"
+
+# train_data <- filter(smd,
+#                      Year >= 2011,
+#                      Year < 2015,
+#                      Zone == iZ)
 train_data <- filter(smd,
-                     Year >= 2011,
+                     Year >= 2014,
                      Year < 2015,
-                     Zone == "ME")
+                     Zone == iZ)
+
 test_data <- filter(smd,
                     Year >= 2015,
-                    Zone == "ME")
+                    Zone == iZ)
 
 maeSummary <- function (data,
                         lev = NULL,
@@ -114,7 +122,7 @@ fitControl <- trainControl(
 smd_fit <- list()
 #mae <- rep(NA, 24)
 
-smd_fit[[1]] <- train(Demand ~ DryBulb + Weekend + Holiday_flag + Period + Month,
+smd_fit[[1]] <- train(Demand ~ poly(DryBulb, 2, raw = TRUE) + Weekend + Holiday_flag + Period + Month,
                       data = train_data,
                       method="lm",
                       metric="MAE",
@@ -128,7 +136,7 @@ xgb_grid <- expand.grid(nrounds = 500,
                         gamma = 1,
                         colsample_bytree = 1,
                         min_child_weight = 1)
-smd_fit[[2]] <- train(Demand ~ DryBulb + Weekend + Holiday_flag + Period + Month,
+smd_fit[[2]] <- train(Demand ~ DryBulb + DoW + Holiday_flag + Period + Month,
                       data = train_data,
                       method="xgbTree",
                       metric="MAE",
@@ -139,17 +147,50 @@ smd_fit[[2]] <- train(Demand ~ DryBulb + Weekend + Holiday_flag + Period + Month
 ```
 
 ```{r}
+# train_data$Demand_pred1 <- predict(smd_fit[[1]], newdata = train_data)
+# train_data$Demand_pred2 <- predict(smd_fit[[2]], newdata = train_data)
 test_data$Demand_pred1 <- predict(smd_fit[[1]], newdata = test_data)
 test_data$Demand_pred2 <- predict(smd_fit[[2]], newdata = test_data)
 
-test_data %>% 
-  filter(Year == 2015,
-         Month %in% c("Jan", "Feb")) %>% 
+# train_data %>% 
+#   filter(Year == 2014) %>% 
+test_data %>%
+  filter(Year == 2015, Month %in% c("Jun", "Jul", "Aug")) %>%
   plot_ly(x = ~ts) %>% 
-  add_trace(y = ~Demand, type = "scatter", mode = "lines") %>% 
-  add_trace(y = ~Demand_pred2, type = "scatter", mode = "lines")
+  add_trace(y = ~Demand, name = "Actual", type = "scatter", mode = "lines") %>% 
+  add_trace(y = ~Demand_pred1, name = "lm", type = "scatter", mode = "lines") %>% 
+  add_trace(y = ~Demand_pred2, name = "xgbTree", type = "scatter", mode = "lines") %>% 
+  layout(title = "Actuals and model predictions",
+         legend = list(orientation = 'h'))
 ```
 
+
+### Performance on test set
+
+Overall performance
+
+```{r}
+test_data %>% 
+  mutate(se1 = (Demand - Demand_pred1)^2,
+         se2 = (Demand - Demand_pred2)^2) %>% 
+  summarise(mse1 = mean(se1)^0.5,
+            mse2 = mean(se2)^0.5) %>% 
+  gather(Model, Score) %>% 
+  datatable()
+```
+
+Performance by load zone
+
+```{r}
+test_data %>% 
+  mutate(se1 = (Demand - Demand_pred1)^2,
+         se2 = (Demand - Demand_pred2)^2) %>% 
+  group_by(Zone) %>% 
+  summarise(mse1 = mean(se1)^0.5,
+            mse2 = mean(se2)^0.5) %>% 
+  gather(Model, Score, -Zone) %>% 
+  datatable()
+```
 
 
 ## Bootstrapping
