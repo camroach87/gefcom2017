@@ -81,9 +81,11 @@ Since we are not provided forecast weather data for the month we will need to re
 This project will be broken into several parts.
 
 1. Fit a model using 2011-2016 data. This data contains public holiday information. Test several models using time-series cross-validation.
-2. Bootstrap weather data (all data 2003-2016). Check for any trends - unlikely over that period. Feed bootstrapped data into model.
-3. Calculate quantiles for each day in month of interest based on bootstrapped results.
-4. **TODO** Determine how best to forecast the aggregated zones.
+2. Bootstrap weather data (all data 2003-2016). Check for any trends - unlikely over that period. Feed bootstrapped data into model to produce demand traces.
+3. Reconcile aggregated and zonal demand forecasts (for each bootstrap sample) using `hts` package.
+4. Bootstrap residuals and add to fitted demand values.
+5. Calculate quantiles for each day in month of interest based on bootstrapped results.
+
 
 Note that since we are not given forecasts of weather data we will have to rely on a bootstrapping approach to determine quantiles, rather than a quantile regression type of model.
 
