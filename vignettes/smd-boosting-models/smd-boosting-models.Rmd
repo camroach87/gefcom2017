@@ -39,6 +39,7 @@ smd <- load_smd_data(root_dir = "./../..", load_zones)
 
 * Think about converting Hour from hour ending to hour beginning. Ensures that the date and hour match up.
 * It looks like there is one observation missing early March and two observations being grouped together at beginning of November for each year and zone. Most likely daylight savings. Check if this is in the source data or if it is caused by aggregation in the load_smd_data function.
+* Still need to figure out why those NA values are sneaking in to smd dataframe.
 
 # Introduction
 
@@ -122,7 +123,7 @@ fitControl <- trainControl(
 smd_fit <- list()
 #mae <- rep(NA, 24)
 
-smd_fit[[1]] <- train(Demand ~ poly(DryBulb, 2, raw = TRUE) + Weekend + Holiday_flag + Period + Month,
+smd_fit[[1]] <- train(Demand ~ poly(DryBulb, 2, raw = TRUE) + Weekend + DoW + Period + Month,
                       data = train_data,
                       method="lm",
                       metric="MAE",
@@ -160,8 +161,7 @@ test_data %>%
   add_trace(y = ~Demand, name = "Actual", type = "scatter", mode = "lines") %>% 
   add_trace(y = ~Demand_pred1, name = "lm", type = "scatter", mode = "lines") %>% 
   add_trace(y = ~Demand_pred2, name = "xgbTree", type = "scatter", mode = "lines") %>% 
-  layout(title = "Actuals and model predictions",
-         legend = list(orientation = 'h'))
+  layout(title = "Actuals and model predictions")
 ```
 
 
@@ -195,10 +195,31 @@ test_data %>%
 
 ## Bootstrapping
 
+During the bootstrapping stage care must be taken to preserve correlations present in the historical data. This includes temporal correlations such as,
+
+* daily weather correlations,
+
+and spatial correlations such as,
+
+* demand correlation between zones.
+
+### Weather bootstrapping
+
+Historical weather data will be bootstrapped in blocks that preserve intra-day weather correlation. _This is similar to the approach by Rob and Shu._
+
+### Residual bootstrapping
+
+In addition to bootstrapping historical weather data to obtain weather scenarios, bootstrapping of the residuals needs to be undertaken. These bootstrapped residuals can then be added back to the fitted values to produce the estimated demand values.
+
+We expect to see correlation in demand between zones. To preserve this correlation, a blocked bootstrap approach will be taken, where each block contains all the zones. This way, zones are shifted together thereby preserving there correlations. This has the advantage of allowing us to simply sum all of the residuals within an aggregated zone to obtain its aggregated residual. _See Souhaib "bagging quantile regression"._
+
+## Aggregated forecast reconciliation
+
+R's `hts` package can be used to reconcile the means of heirarchical forecasts. Since we are forecasting the conditional mean on the bootstrap samples we can use `hts` to reconcile the aggregated means and zone means. Empirical quantiles may then be calculated from these reconciled forecasts for each zone and aggregated zone.
+
 ## Quantile calculations
 
-## Aggregated zones
-
+Quantiles may be calculated for each hour of each day by simply calculating the empirical quantiles of the bootstrapped demand traces. R's `quantile` function is all that is needed for this.
 
 # Performance
 
