@@ -7,6 +7,25 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+rm(list=ls())
+
+require(dplyr)
+require(tidyr)
+require(readxl)
+require(lubridate)
+require(ggplot2)
+require(plotly)
+require(DT)
+require(caret)
+require(myhelpr)
+
+source("../../R/loadData.R")
+
+load_zones_mass <- c("SEMASS", "WCMASS", "NEMASSBOST")
+load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_mass)
+
+smd <- load_smd_data(root_dir = "./../..", load_zones)
 ```
 
 Depending on the variable type caret can take a long time to fit xgboost. If a factor is ordered this severely impacts the run time. All other methods of structuring the training data are roughly the same speed with similar model performance.
