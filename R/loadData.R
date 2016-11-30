@@ -1,6 +1,6 @@
 #' Load SMD data
 #' 
-#' Loadas data for GEFCom2017-D
+#' Loads data for GEFCom2017-D.
 #' 
 #' TODO: Why are there NAs appearing in ts?
 #' 
@@ -41,14 +41,15 @@ load_smd_data <- function(root_dir = ".", load_zones) {
     }
     
     # Add extra variables
+    # Note that factors are not ordered as this can adversely impact model fitting time in caret.
     smd <- smd %>% 
       mutate(Date = if_else(Hour == 24, Date + days(1), Date),
-             Period = factor(smd$Hour, levels = 1:24, ordered = TRUE),
+             Period = factor(smd$Hour, levels = 1:24, ordered = FALSE),
              Hour = if_else(Hour == 24, 0, Hour),
              ts = ymd_h(paste(Date, Hour)),
              Year = year(ts),
-             Month = month(ts, label = TRUE),
-             DoW = wday(ts, label = TRUE),
+             Month = factor(month(ts, label = TRUE), ordered = FALSE),
+             DoW = factor(wday(ts, label = TRUE), ordered = FALSE),
              Weekend = ifelse(DoW %in% c("Sat", "Sun"), TRUE, FALSE),
              DryDewDiff = DryBulb - DewPnt)
     
