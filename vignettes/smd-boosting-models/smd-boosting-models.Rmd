@@ -40,6 +40,9 @@ smd <- load_smd_data(root_dir = "./../..", load_zones)
 * Think about converting Hour from hour ending to hour beginning. Ensures that the date and hour match up.
 * It looks like there is one observation missing early March and two observations being grouped together at beginning of November for each year and zone. Most likely daylight savings. Check if this is in the source data or if it is caused by aggregation in the load_smd_data function.
 * Still need to figure out why those NA values are sneaking in to smd dataframe.
+* Maybe start a new vignette investigating the impact of lags on xgboost accuracy? Use a cut down data set size (1 year, demand and temperature only?) to speed up model fitting. From some basic testing it looks as though lags do improve the fit.
+  * Remove the adhoc lagged variable creation from within this doc (model 3)
+  * Decide if I also want to include lagged demand values.
 
 # Introduction
 
@@ -97,11 +100,13 @@ iZ <- "SEMASS"
 train_data <- filter(smd,
                      Year >= 2011,
                      Year < 2015,
-                     Zone == iZ)
+                     Zone == iZ) %>% 
+  mutate(DryBulb_lag1 = lag(DryBulb, 1))
 
 test_data <- filter(smd,
                     Year >= 2015,
-                    Zone == iZ)
+                    Zone == iZ) %>% 
+  mutate(DryBulb_lag1 = lag(DryBulb, 1))
 
 maeSummary <- function (data,
                         lev = NULL,
@@ -150,7 +155,7 @@ system.time({
 })
 
 system.time({
-  smd_fit[[3]] <- train(Demand ~ DryBulb + DoW + Holiday_flag + Period + DoY + lag(DryBulb, 1),
+  smd_fit[[3]] <- train(Demand ~ DryBulb + DryBulb_lag1 + DoW + Holiday_flag + Period + DoY,
                         data = train_data,
                         method="xgbTree",
                         metric="MAE",
@@ -171,8 +176,8 @@ test_data$Demand_pred3 <- predict(smd_fit[[3]], newdata = test_data)
 # train_data %>% 
 #   filter(Year == 2014) %>% 
 test_data %>%
-  #filter(Year == 2015, Month %in% c("Jun", "Jul", "Aug")) %>%
-  filter(Year == 2015) %>% 
+  filter(Year == 2015, Month %in% c("Jun")) %>%
+  #filter(Year == 2015) %>% 
   plot_ly(x = ~ts) %>% 
   add_trace(y = ~Demand, name = "Actual", type = "scatter", mode = "lines") %>% 
   add_trace(y = ~Demand_pred1, name = "lm", type = "scatter", mode = "lines") %>% 
