@@ -2,8 +2,6 @@
 #' 
 #' Loads data for GEFCom2017-D.
 #' 
-#' TODO: Why are there NAs appearing in ts?
-#' 
 #' @param root_dir Path to the root directory.
 #' @param load_zones Electricity load zones.
 #'
@@ -50,6 +48,7 @@ load_smd_data <- function(root_dir = ".", load_zones) {
              Year = year(ts),
              Month = factor(month(ts, label = TRUE), ordered = FALSE),
              DoW = factor(wday(ts, label = TRUE), ordered = FALSE),
+             DoY = yday(ts),
              Weekend = ifelse(DoW %in% c("Sat", "Sun"), TRUE, FALSE),
              DryDewDiff = DryBulb - DewPnt)
     
