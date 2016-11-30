@@ -94,12 +94,8 @@ Note that since we are not given forecasts of weather data we will have to rely 
 ```{r}
 iZ <- "SEMASS"
 
-# train_data <- filter(smd,
-#                      Year >= 2011,
-#                      Year < 2015,
-#                      Zone == iZ)
 train_data <- filter(smd,
-                     Year >= 2014,
+                     Year >= 2011,
                      Year < 2015,
                      Zone == iZ)
 
@@ -125,28 +121,44 @@ fitControl <- trainControl(
 smd_fit <- list()
 #mae <- rep(NA, 24)
 
-smd_fit[[1]] <- train(Demand ~ poly(DryBulb, 2, raw = TRUE) + Weekend + DoW + Period + Month,
-                      data = train_data,
-                      method="lm",
-                      metric="MAE",
-                      maximize = FALSE)#,
-                      #trControl = fitControl)
+system.time({
+  smd_fit[[1]] <- train(Demand ~ poly(DryBulb, 2, raw = TRUE) + Weekend + DoW + Period + Month,
+                        data = train_data,
+                        method="lm",
+                        metric="MAE",
+                        maximize = FALSE)#,
+  #trControl = fitControl)
+})
 
 
 xgb_grid <- expand.grid(nrounds = 500,
-                        eta = c(0.01,0.1),
-                        max_depth = c(2,6,10),
-                        gamma = 1,
-                        colsample_bytree = 1,
-                        min_child_weight = 1)
-smd_fit[[2]] <- train(Demand ~ DryBulb + DoW + Holiday_flag + Period + Month,
-                      data = train_data,
-                      method="xgbTree",
-                      metric="MAE",
-                      maximize = FALSE,
-                      tuneGrid = xgb_grid)#,
-                      #trControl = fitControl)
-#mae[i+1] <- model_h[[i+1]]$results$MAE
+                          eta = c(0.01,0.1),
+                          max_depth = c(2,6,10),
+                          gamma = 1,
+                          colsample_bytree = 1,
+                          min_child_weight = 1)
+
+system.time({
+  smd_fit[[2]] <- train(Demand ~ DryBulb + DoW + Holiday_flag + Period + DoY,
+                        data = train_data,
+                        method="xgbTree",
+                        metric="MAE",
+                        maximize = FALSE,
+                        tuneGrid = xgb_grid)#,
+  #trControl = fitControl)
+  #mae[i+1] <- model_h[[i+1]]$results$MAE
+})
+
+system.time({
+  smd_fit[[3]] <- train(Demand ~ DryBulb + DoW + Holiday_flag + Period + DoY + lag(DryBulb, 1),
+                        data = train_data,
+                        method="xgbTree",
+                        metric="MAE",
+                        maximize = FALSE,
+                        tuneGrid = xgb_grid)#,
+  #trControl = fitControl)
+  #mae[i+1] <- model_h[[i+1]]$results$MAE
+})
 ```
 
 ```{r}
@@ -154,15 +166,18 @@ smd_fit[[2]] <- train(Demand ~ DryBulb + DoW + Holiday_flag + Period + Month,
 # train_data$Demand_pred2 <- predict(smd_fit[[2]], newdata = train_data)
 test_data$Demand_pred1 <- predict(smd_fit[[1]], newdata = test_data)
 test_data$Demand_pred2 <- predict(smd_fit[[2]], newdata = test_data)
+test_data$Demand_pred3 <- predict(smd_fit[[3]], newdata = test_data)
 
 # train_data %>% 
 #   filter(Year == 2014) %>% 
 test_data %>%
-  filter(Year == 2015, Month %in% c("Jun", "Jul", "Aug")) %>%
+  #filter(Year == 2015, Month %in% c("Jun", "Jul", "Aug")) %>%
+  filter(Year == 2015) %>% 
   plot_ly(x = ~ts) %>% 
   add_trace(y = ~Demand, name = "Actual", type = "scatter", mode = "lines") %>% 
   add_trace(y = ~Demand_pred1, name = "lm", type = "scatter", mode = "lines") %>% 
   add_trace(y = ~Demand_pred2, name = "xgbTree", type = "scatter", mode = "lines") %>% 
+  add_trace(y = ~Demand_pred3, name = "xgbTree_lag", type = "scatter", mode = "lines") %>% 
   layout(title = "Actuals and model predictions")
 ```
 
@@ -174,9 +189,11 @@ Overall performance
 ```{r}
 test_data %>% 
   mutate(se1 = (Demand - Demand_pred1)^2,
-         se2 = (Demand - Demand_pred2)^2) %>% 
+         se2 = (Demand - Demand_pred2)^2,
+         se3 = (Demand - Demand_pred3)^2) %>% 
   summarise(mse1 = mean(se1)^0.5,
-            mse2 = mean(se2)^0.5) %>% 
+            mse2 = mean(se2)^0.5,
+            mse3 = mean(se3)^0.5) %>% 
   gather(Model, Score) %>% 
   datatable()
 ```
