@@ -41,8 +41,8 @@ smd <- load_smd_data(root_dir = "./../..", load_zones)
 * It looks like there is one observation missing early March and two observations being grouped together at beginning of November for each year and zone. Most likely daylight savings. Check if this is in the source data or if it is caused by aggregation in the load_smd_data function.
 * Still need to figure out why those NA values are sneaking in to smd dataframe.
 * Maybe start a new vignette investigating the impact of lags on xgboost accuracy? Use a cut down data set size (1 year, demand and temperature only?) to speed up model fitting. From some basic testing it looks as though lags do improve the fit.
-  * Remove the adhoc lagged variable creation from within this doc (model 3)
-  * Decide if I also want to include lagged demand values.
+    * Remove the adhoc lagged variable creation from within this doc (model 3)
+    * Decide if I also want to include lagged demand values.
 
 # Introduction
 
