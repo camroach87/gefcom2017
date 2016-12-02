@@ -43,6 +43,7 @@ smd <- load_smd_data(root_dir = "./../..", load_zones)
 * Maybe start a new vignette investigating the impact of lags on xgboost accuracy? Use a cut down data set size (1 year, demand and temperature only?) to speed up model fitting. From some basic testing it looks as though lags do improve the fit.
     * Remove the adhoc lagged variable creation from within this doc (model 3)
     * Decide if I also want to include lagged demand values.
+    * Decide if I should use xgbTree or xgbLinear
 
 # Introduction
 
