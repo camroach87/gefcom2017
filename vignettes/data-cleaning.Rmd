@@ -1,0 +1,41 @@
+---
+title: "Data cleaning"
+author: Cameron Roach
+output: 
+  html_notebook: 
+    number_sections: yes
+    toc: yes
+    toc_float:
+      collapsed: false
+---
+
+There are several oddities that need to be tidied up in the raw data.
+
+# Daylight savings
+
+When the time shifts forward by an hour the skipped hour has its row filled with zeros. When time moves back by an hour the repeated hour has two hours worth of demand summed together. These issues both need to be corrected for. _This only applies to electricity values and does not apply to temperature readings._
+
+
+## Temperature readings
+
+When daylight savings time (DST) comes into effect in March and time skips forward by an hour we do not observe any electricity measurements - the entire row is zero as expected. However, we do see dry bulb and dew point temperature readings. What do these represent?? They do not appear to be duplicated values nor is there any interpolation taking place.
+
+When DST ends we do not observe two hours worth of values being summed together.
+
+Could this be a case of the electricity values being recorded on DST time and weather variables sticking to a non-DST (sequential) time? This would imply that throughout the DST period the electricity and weather variables are out of sync by an hour for the whole period.
+
+## Explanation
+
+Found this in the spreadsheet which explains how the data is in fact treated.
+
+> *Note: For the months of April & October, hourly system load and weather data is averaged to correct for Daylight Savings Time. In April, the hours before and after are averaged to provide a value for the system load and weather for the DST hour.  The LMP data and non-PTF demand are reported as a zero value for the missing hour. In October, an averaged value is used for the double counted hour for system load and weather to correct for the change back to Eastern Standard Time.
+
+# Solution
+
+* Probably don't want to convert timestamps away from DST. Maybe want to build a separate model for DST and non-DST periods of the year.
+* We can ignore the missing DST hour. No values are real/relevant.
+* The doulbe counted and averaged hour needs to be split into two hours. We need to impute estimates for the actual demand and weather across the two hours. Need to make sure these imputed values are consistent (average to) the average value that was recorded.
+
+# Code
+
+**TODO**
