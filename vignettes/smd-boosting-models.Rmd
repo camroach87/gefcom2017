@@ -249,6 +249,8 @@ Note that since we are not given forecasts of weather data we will have to rely 
 
 ## Model training
 
+We train a naive model (OLS), a linear boosted model without lags and the xgbLinear_lag5 model, which includes several lags. The xgbLinear_lag5 model differs to the one investigated in boosting-test.Rmd in that calendar effects have been added (DoW, Holiday_flag and DoY).
+
 ```{r}
 xgb_fit <- list()
 
@@ -276,19 +278,17 @@ system.time({
 })
 
 system.time({
-  xgb_fit[["xgbLinear_lags"]] <-  train_data %>% 
-    select(Demand, Period, starts_with("DryBulb"), starts_with("DewPnt")) %>% 
-    train(Demand ~ . ,
-          data = .,
-          method="xgbLinear",
-          trControl = xgb_ctrl,
-          tuneGrid = xgb_grid_linear,
-          nthread = 1)
+  xgb_fit[["xgbLinear_lag5"]] <-  train(Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + DryBulb_lag3 + DryBulb_lag4 + DryBulb_lag5 + DryBulb_lag6 + DryBulb_lag24 + DryBulb_lag48 + DryBulb_lag72 + Period + DoW + Holiday_flag + DoY,
+                                   data = train_data,
+                                   method="xgbLinear",
+                                   trControl = xgb_ctrl,
+                                   tuneGrid = xgb_grid_linear,
+                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
 
 test_data$Demand_pred_lm <- predict(xgb_fit[["naive_linear"]], newdata = test_data)
 test_data$Demand_pred_xgb <- predict(xgb_fit[["xgbLinear"]], newdata = test_data)
-test_data$Demand_pred_xgb_lags <- predict(xgb_fit[["xgbLinear_lags"]], newdata = test_data)
+test_data$Demand_pred_xgb_lag5 <- predict(xgb_fit[["xgbLinear_lag5"]], newdata = test_data)
 
 test_data %>%
   filter(Year == 2015, Month %in% c("Mar")) %>%
@@ -297,7 +297,7 @@ test_data %>%
   add_trace(y = ~Demand_pred_lm, name = "lm", type = "scatter", mode = "lines") %>% 
   add_trace(y = ~Demand_pred_xgb, name = "xgbLinear", type = "scatter",
             mode = "lines") %>% 
-  add_trace(y = ~Demand_pred_xgb_lags, name = "xgbLinear_lags",
+  add_trace(y = ~Demand_pred_xgb_lag5, name = "xgbLinear_lag5",
             type = "scatter", mode = "lines") %>% 
   layout(title = "Actuals and model predictions")
 ```
@@ -307,16 +307,16 @@ Worryingly, we can see that once daylight savings kicks in on March 8th, the tim
 
 ### Performance on test set
 
-Overall performance
+The results here will be slightly different to those in boost-tests.Rmd because we are including non-working days and calendar effects.
 
 ```{r}
 test_data %>% 
   mutate(se_lm = (Demand - Demand_pred_lm)^2,
          se_xgb = (Demand - Demand_pred_xgb)^2,
-         se_xgb_lags (Demand - Demand_pred_xgb_lags)^2) %>% 
+         se_xgb_lag5 = (Demand - Demand_pred_xgb_lag5)^2) %>% 
   summarise(mse_lm = mean(se_lm)^0.5,
             mse_xgb = mean(se_xgb)^0.5,
-            mse_xgb_lags = mean(se_xgb_lags)^0.5) %>%
+            mse_xgb_lag5 = mean(se_xgb_lag5)^0.5) %>%
   gather(Model, Score) %>% 
   datatable()
 ```
