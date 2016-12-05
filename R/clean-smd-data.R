@@ -17,7 +17,7 @@
 #' 
 #' @author Cameron Roach
 clean_smd_data <- function(smd, root_dir = ".") {
-  dst_times <- read.csv(file.path(root_dir, "/data/dst_ts.csv")) %>% 
+  dst_times <- read.csv(file.path(root_dir, "data/dst_ts.csv")) %>% 
     mutate(dst_start = ymd_hms(dst_start),
            dst_end = ymd_hms(dst_end))
   
