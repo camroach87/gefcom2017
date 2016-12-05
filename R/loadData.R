@@ -2,8 +2,8 @@
 #' 
 #' Loads data for GEFCom2017-D.
 #' 
-#' @param root_dir Path to the root directory.
 #' @param load_zones Electricity load zones.
+#' @param root_dir Path to the root directory.
 #'
 #' 
 #' @return smd data_frame containing raw data and calendar variables
@@ -12,7 +12,7 @@
 #' @examples
 #' 
 #' @author Cameron Roach
-load_smd_data <- function(root_dir = ".", load_zones) {
+load_smd_data <- function(load_zones, root_dir = ".") {
   if (file.exists(file.path(root_dir, "cache/smd_data.Rdata"))) {
     # load smd data frame from cached file
     load(file.path(root_dir, "cache/smd_data.Rdata"))

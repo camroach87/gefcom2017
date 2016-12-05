@@ -25,7 +25,7 @@ source("../R/loadData.R")
 load_zones_mass <- c("SEMASS", "WCMASS", "NEMASSBOST")
 load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_mass)
 
-smd <- load_smd_data(root_dir = "./..", load_zones)
+smd <- load_smd_data(load_zones, root_dir = "./..")
 ```
 
 Depending on the variable type caret can take a long time to fit xgboost. If a factor is ordered this severely impacts the run time. All other methods of structuring the training data are roughly the same speed with similar model performance.

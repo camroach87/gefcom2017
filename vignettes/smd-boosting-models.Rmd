@@ -32,7 +32,7 @@ source("../R/loadData.R")
 load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
 load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
 
-smd <- load_smd_data(root_dir = "./..", load_zones)
+smd <- load_smd_data(load_zones, root_dir = "./..")
 ```
 
 # TODO
