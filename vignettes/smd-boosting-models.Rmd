@@ -29,7 +29,7 @@ require(caret)
 require(myhelpr)
 require(doMC)
 
-registerDoMC(cores = 4)
+registerDoMC(cores = 3)
 
 source("../R/loadData.R")
 source("../R/clean-smd-data.R")
