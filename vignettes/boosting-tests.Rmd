@@ -15,6 +15,7 @@ knitr::opts_chunk$set(
 	message = FALSE,
 	warning = FALSE
 )
+
 rm(list=ls())
 
 require(dplyr)
@@ -28,7 +29,7 @@ require(caret)
 require(myhelpr)
 require(doMC)
 
-registerDoMC(cores = 3)
+registerDoMC(cores = 4)
 
 source("../R/loadData.R")
 source("../R/clean-smd-data.R")
@@ -234,14 +235,16 @@ xgb_grid_tree <- expand.grid(nrounds = 500,
                         max_depth = 10,
                         gamma = 1,
                         colsample_bytree = 1,
-                        min_child_weight = 1)
+                        min_child_weight = 1,
+                        subsample = 1)
 
 system.time({
   xgb_fit[["xgbTree"]] <- train(Demand ~ DryBulb + Period,
                                 data = train_data,
                                 method="xgbTree",
                                 trControl = xgb_ctrl,
-                                tuneGrid = xgb_grid_tree)
+                                tuneGrid = xgb_grid_tree,
+                                nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
 
 xgb_grid_linear <- expand.grid(nrounds = 300,
@@ -254,7 +257,8 @@ system.time({
                                    data = train_data,
                                    method="xgbLinear",
                                    trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear)
+                                   tuneGrid = xgb_grid_linear,
+                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
 
 xgb_fit
@@ -275,7 +279,8 @@ system.time({
                                    data = train_data,
                                    method="xgbLinear",
                                    trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear)
+                                   tuneGrid = xgb_grid_linear,
+                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
 
 system.time({
@@ -283,7 +288,8 @@ system.time({
                                    data = train_data,
                                    method="xgbLinear",
                                    trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear)
+                                   tuneGrid = xgb_grid_linear,
+                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
 
 system.time({
@@ -291,7 +297,8 @@ system.time({
                                    data = train_data,
                                    method="xgbLinear",
                                    trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear)
+                                   tuneGrid = xgb_grid_linear,
+                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
 
 system.time({
@@ -299,7 +306,8 @@ system.time({
                                    data = train_data,
                                    method="xgbLinear",
                                    trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear)
+                                   tuneGrid = xgb_grid_linear,
+                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
 
 system.time({
@@ -307,7 +315,8 @@ system.time({
                                    data = train_data,
                                    method="xgbLinear",
                                    trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear)
+                                   tuneGrid = xgb_grid_linear,
+                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
 
 system.time({
@@ -315,7 +324,8 @@ system.time({
                                    data = train_data,
                                    method="xgbLinear",
                                    trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear)
+                                   tuneGrid = xgb_grid_linear,
+                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
 
 system.time({
@@ -323,7 +333,8 @@ system.time({
                                    data = train_data,
                                    method="xgbLinear",
                                    trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear)
+                                   tuneGrid = xgb_grid_linear,
+                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
 
 system.time({
@@ -331,7 +342,8 @@ system.time({
                                    data = train_data,
                                    method="xgbLinear",
                                    trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear)
+                                   tuneGrid = xgb_grid_linear,
+                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
 ```
 
@@ -375,7 +387,8 @@ system.time({
           data = .,
           method="xgbLinear",
           trControl = xgb_ctrl,
-          tuneGrid = xgb_grid_linear)
+          tuneGrid = xgb_grid_linear,
+          nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
 ```
 
