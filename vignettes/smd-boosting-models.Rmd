@@ -40,7 +40,7 @@ load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
 smd <- load_smd_data(load_zones, root_dir = "./..")
 smd <- clean_smd_data(smd, root_dir = "./..")
 
-iZ <- "ME"
+iZ <- "VT"
 
 smd <- smd %>%
   filter(Zone == iZ) %>% 
@@ -187,7 +187,79 @@ smd <- smd %>%
          DewPnt_lag69 = lag(DewPnt, 69),
          DewPnt_lag70 = lag(DewPnt, 70),
          DewPnt_lag71 = lag(DewPnt, 71),
-         DewPnt_lag72 = lag(DewPnt, 72))
+         DewPnt_lag72 = lag(DewPnt, 72),
+         Demand_lag1 = lag(Demand, 1),
+         Demand_lag2 = lag(Demand, 2),
+         Demand_lag3 = lag(Demand, 3),
+         Demand_lag4 = lag(Demand, 4),
+         Demand_lag5 = lag(Demand, 5),
+         Demand_lag6 = lag(Demand, 6),
+         Demand_lag7 = lag(Demand, 7),
+         Demand_lag8 = lag(Demand, 8),
+         Demand_lag9 = lag(Demand, 9),
+         Demand_lag10 = lag(Demand, 10),
+         Demand_lag11 = lag(Demand, 11),
+         Demand_lag12 = lag(Demand, 12),
+         Demand_lag13 = lag(Demand, 13),
+         Demand_lag14 = lag(Demand, 14),
+         Demand_lag15 = lag(Demand, 15),
+         Demand_lag16 = lag(Demand, 16),
+         Demand_lag17 = lag(Demand, 17),
+         Demand_lag18 = lag(Demand, 18),
+         Demand_lag19 = lag(Demand, 19),
+         Demand_lag20 = lag(Demand, 20),
+         Demand_lag21 = lag(Demand, 21),
+         Demand_lag22 = lag(Demand, 22),
+         Demand_lag23 = lag(Demand, 23),
+         Demand_lag24 = lag(Demand, 24),
+         Demand_lag25 = lag(Demand, 25),
+         Demand_lag26 = lag(Demand, 26),
+         Demand_lag27 = lag(Demand, 27),
+         Demand_lag28 = lag(Demand, 28),
+         Demand_lag29 = lag(Demand, 29),
+         Demand_lag30 = lag(Demand, 30),
+         Demand_lag31 = lag(Demand, 31),
+         Demand_lag32 = lag(Demand, 32),
+         Demand_lag33 = lag(Demand, 33),
+         Demand_lag34 = lag(Demand, 34),
+         Demand_lag35 = lag(Demand, 35),
+         Demand_lag36 = lag(Demand, 36),
+         Demand_lag37 = lag(Demand, 37),
+         Demand_lag38 = lag(Demand, 38),
+         Demand_lag39 = lag(Demand, 39),
+         Demand_lag40 = lag(Demand, 40),
+         Demand_lag41 = lag(Demand, 41),
+         Demand_lag42 = lag(Demand, 42),
+         Demand_lag43 = lag(Demand, 43),
+         Demand_lag44 = lag(Demand, 44),
+         Demand_lag45 = lag(Demand, 45),
+         Demand_lag46 = lag(Demand, 46),
+         Demand_lag47 = lag(Demand, 47),
+         Demand_lag48 = lag(Demand, 48),
+         Demand_lag49 = lag(Demand, 49),
+         Demand_lag50 = lag(Demand, 50),
+         Demand_lag51 = lag(Demand, 51),
+         Demand_lag52 = lag(Demand, 52),
+         Demand_lag53 = lag(Demand, 53),
+         Demand_lag54 = lag(Demand, 54),
+         Demand_lag55 = lag(Demand, 55),
+         Demand_lag56 = lag(Demand, 56),
+         Demand_lag57 = lag(Demand, 57),
+         Demand_lag58 = lag(Demand, 58),
+         Demand_lag59 = lag(Demand, 59),
+         Demand_lag60 = lag(Demand, 60),
+         Demand_lag61 = lag(Demand, 61),
+         Demand_lag62 = lag(Demand, 62),
+         Demand_lag63 = lag(Demand, 63),
+         Demand_lag64 = lag(Demand, 64),
+         Demand_lag65 = lag(Demand, 65),
+         Demand_lag66 = lag(Demand, 66),
+         Demand_lag67 = lag(Demand, 67),
+         Demand_lag68 = lag(Demand, 68),
+         Demand_lag69 = lag(Demand, 69),
+         Demand_lag70 = lag(Demand, 70),
+         Demand_lag71 = lag(Demand, 71),
+         Demand_lag72 = lag(Demand, 72))
 
 train_data <- filter(smd, Year >= 2012, Year < 2015)
 
@@ -286,23 +358,70 @@ system.time({
                                    nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
 
+system.time({
+  xgb_fit[["xgbLinear_lag_demand"]] <-  train(Demand ~ DryBulb + Demand_lag1 + Demand_lag2 + Demand_lag3 + Demand_lag24 + Demand_lag48 + Demand_lag72 + Period + DoW + Holiday_flag + DoY,
+                                   data = train_data,
+                                   method="xgbLinear",
+                                   trControl = xgb_ctrl,
+                                   tuneGrid = xgb_grid_linear,
+                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+})
+
+system.time({
+  xgb_fit[["xgbLinear_lag_temp_demand"]] <-  train(Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + DryBulb_lag3 + DryBulb_lag4 + DryBulb_lag5 + DryBulb_lag6 + DryBulb_lag24 + DryBulb_lag48 + DryBulb_lag72 + Demand_lag1 + Demand_lag2 + Demand_lag3 + Demand_lag24 + Demand_lag48 + Demand_lag72 + Period + DoW + Holiday_flag + DoY,
+                                   data = train_data,
+                                   method="xgbLinear",
+                                   trControl = xgb_ctrl,
+                                   tuneGrid = xgb_grid_linear,
+                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+})
+
+
 test_data$Demand_pred_lm <- predict(xgb_fit[["naive_linear"]], newdata = test_data)
 test_data$Demand_pred_xgb <- predict(xgb_fit[["xgbLinear"]], newdata = test_data)
 test_data$Demand_pred_xgb_lag5 <- predict(xgb_fit[["xgbLinear_lag5"]], newdata = test_data)
+test_data$Demand_pred_xgb_lag_demand <- predict(xgb_fit[["xgbLinear_lag_demand"]], newdata = test_data)
+test_data$Demand_pred_xgb_lag_temp_demand <- predict(xgb_fit[["xgbLinear_lag_temp_demand"]], newdata = test_data)
 
 test_data %>%
   filter(Year == 2015, Month %in% c("Mar")) %>%
   plot_ly(x = ~ts) %>% 
-  add_trace(y = ~Demand, name = "Actual", type = "scatter", mode = "lines") %>% 
-  add_trace(y = ~Demand_pred_lm, name = "lm", type = "scatter", mode = "lines") %>% 
+  add_trace(y = ~Demand, name = "Actual", type = "scatter", 
+            mode = "lines") %>% 
+  add_trace(y = ~Demand_pred_lm, name = "lm", type = "scatter", 
+            mode = "lines") %>% 
   add_trace(y = ~Demand_pred_xgb, name = "xgbLinear", type = "scatter",
             mode = "lines") %>% 
   add_trace(y = ~Demand_pred_xgb_lag5, name = "xgbLinear_lag5",
+            type = "scatter", mode = "lines") %>% 
+  add_trace(y = ~Demand_pred_xgb_lag_demand, name = "xgbLinear_lag_demand",
             type = "scatter", mode = "lines") %>% 
   layout(title = "Actuals and model predictions")
 ```
 
 Worryingly, we can see that once daylight savings kicks in on March 8th, the time of the peak shifts back one period (from 19 to 20). So, basically, it looks like demand is behaving as before (peak still occurs at same non-DST time), but because we have shifted to DST it looks like the peak has been shifted back by an hour. This may be affecting the model fit. Should probably build two models
+
+### Cross validation scores
+
+```{r}
+performance_df <- NULL
+for (iM in names(xgb_fit)) {
+  performance_df <- data.frame(
+    Model = iM,
+    RMSE = min(xgb_fit[[iM]]$results$RMSE)
+  ) %>% 
+    bind_rows(performance_df)
+}
+
+performance_df$Model <- factor(performance_df$Model, levels = names(xgb_fit),
+                               ordered = TRUE)
+
+ggplot(performance_df, aes(x=Model, y=RMSE)) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  ggtitle("RMSE for boosted models")
+```
+
 
 
 ### Performance on test set
@@ -311,13 +430,11 @@ The results here will be slightly different to those in boost-tests.Rmd because 
 
 ```{r}
 test_data %>% 
-  mutate(se_lm = (Demand - Demand_pred_lm)^2,
-         se_xgb = (Demand - Demand_pred_xgb)^2,
-         se_xgb_lag5 = (Demand - Demand_pred_xgb_lag5)^2) %>% 
-  summarise(mse_lm = mean(se_lm)^0.5,
-            mse_xgb = mean(se_xgb)^0.5,
-            mse_xgb_lag5 = mean(se_xgb_lag5)^0.5) %>%
-  gather(Model, Score) %>% 
+  select(Demand, starts_with("Demand_pred")) %>% 
+  gather(Model, Prediction, -Demand) %>% 
+  mutate(sqe = (Demand - Prediction)^2) %>% 
+  group_by(Model) %>% 
+  summarise(rmse = mean(sqe)^0.5) %>% 
   datatable()
 ```
 
