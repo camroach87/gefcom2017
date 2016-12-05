@@ -32,7 +32,8 @@ load_smd_data <- function(root_dir = ".", load_zones) {
       for (iS in load_zones) {
         tmp <- read_excel(file_name, sheet = iS) %>% 
           mutate(Zone = iS) %>% 
-          select(Date, Hour, Zone, Demand = DEMAND, DryBulb, DewPnt)
+          select(Date, Hour, Zone, Demand = DEMAND, DryBulb, DewPnt) %>% 
+          filter(!is.na(Demand)) # some spreadsheet tabs have trailing blank rows
         
         smd <- bind_rows(smd, tmp)
       }
@@ -53,7 +54,7 @@ load_smd_data <- function(root_dir = ".", load_zones) {
              DryDewDiff = DryBulb - DewPnt)
     
     # Add holidays
-    smd <- full_join(smd, holidays) %>% 
+    smd <- left_join(smd, holidays) %>% 
       mutate(Holiday = if_else(is.na(Holiday), "NH", Holiday),
              Holiday_flag = if_else(Holiday == "NH", FALSE, TRUE))
     
