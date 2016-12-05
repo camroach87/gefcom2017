@@ -15,6 +15,7 @@ knitr::opts_chunk$set(
 	message = FALSE,
 	warning = FALSE
 )
+
 rm(list=ls())
 
 require(dplyr)
@@ -26,6 +27,9 @@ require(plotly)
 require(DT)
 require(caret)
 require(myhelpr)
+require(doMC)
+
+registerDoMC(cores = 4)
 
 source("../R/loadData.R")
 source("../R/clean-smd-data.R")
@@ -35,17 +39,165 @@ load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
 
 smd <- load_smd_data(load_zones, root_dir = "./..")
 smd <- clean_smd_data(smd, root_dir = "./..")
+
+iZ <- "ME"
+
+smd <- smd %>%
+  filter(Zone == iZ) %>% 
+  mutate(DryBulb_lag1 = lag(DryBulb, 1),
+         DryBulb_lag2 = lag(DryBulb, 2),
+         DryBulb_lag3 = lag(DryBulb, 3),
+         DryBulb_lag4 = lag(DryBulb, 4),
+         DryBulb_lag5 = lag(DryBulb, 5),
+         DryBulb_lag6 = lag(DryBulb, 6),
+         DryBulb_lag7 = lag(DryBulb, 7),
+         DryBulb_lag8 = lag(DryBulb, 8),
+         DryBulb_lag9 = lag(DryBulb, 9),
+         DryBulb_lag10 = lag(DryBulb, 10),
+         DryBulb_lag11 = lag(DryBulb, 11),
+         DryBulb_lag12 = lag(DryBulb, 12),
+         DryBulb_lag13 = lag(DryBulb, 13),
+         DryBulb_lag14 = lag(DryBulb, 14),
+         DryBulb_lag15 = lag(DryBulb, 15),
+         DryBulb_lag16 = lag(DryBulb, 16),
+         DryBulb_lag17 = lag(DryBulb, 17),
+         DryBulb_lag18 = lag(DryBulb, 18),
+         DryBulb_lag19 = lag(DryBulb, 19),
+         DryBulb_lag20 = lag(DryBulb, 20),
+         DryBulb_lag21 = lag(DryBulb, 21),
+         DryBulb_lag22 = lag(DryBulb, 22),
+         DryBulb_lag23 = lag(DryBulb, 23),
+         DryBulb_lag24 = lag(DryBulb, 24),
+         DryBulb_lag25 = lag(DryBulb, 25),
+         DryBulb_lag26 = lag(DryBulb, 26),
+         DryBulb_lag27 = lag(DryBulb, 27),
+         DryBulb_lag28 = lag(DryBulb, 28),
+         DryBulb_lag29 = lag(DryBulb, 29),
+         DryBulb_lag30 = lag(DryBulb, 30),
+         DryBulb_lag31 = lag(DryBulb, 31),
+         DryBulb_lag32 = lag(DryBulb, 32),
+         DryBulb_lag33 = lag(DryBulb, 33),
+         DryBulb_lag34 = lag(DryBulb, 34),
+         DryBulb_lag35 = lag(DryBulb, 35),
+         DryBulb_lag36 = lag(DryBulb, 36),
+         DryBulb_lag37 = lag(DryBulb, 37),
+         DryBulb_lag38 = lag(DryBulb, 38),
+         DryBulb_lag39 = lag(DryBulb, 39),
+         DryBulb_lag40 = lag(DryBulb, 40),
+         DryBulb_lag41 = lag(DryBulb, 41),
+         DryBulb_lag42 = lag(DryBulb, 42),
+         DryBulb_lag43 = lag(DryBulb, 43),
+         DryBulb_lag44 = lag(DryBulb, 44),
+         DryBulb_lag45 = lag(DryBulb, 45),
+         DryBulb_lag46 = lag(DryBulb, 46),
+         DryBulb_lag47 = lag(DryBulb, 47),
+         DryBulb_lag48 = lag(DryBulb, 48),
+         DryBulb_lag49 = lag(DryBulb, 49),
+         DryBulb_lag50 = lag(DryBulb, 50),
+         DryBulb_lag51 = lag(DryBulb, 51),
+         DryBulb_lag52 = lag(DryBulb, 52),
+         DryBulb_lag53 = lag(DryBulb, 53),
+         DryBulb_lag54 = lag(DryBulb, 54),
+         DryBulb_lag55 = lag(DryBulb, 55),
+         DryBulb_lag56 = lag(DryBulb, 56),
+         DryBulb_lag57 = lag(DryBulb, 57),
+         DryBulb_lag58 = lag(DryBulb, 58),
+         DryBulb_lag59 = lag(DryBulb, 59),
+         DryBulb_lag60 = lag(DryBulb, 60),
+         DryBulb_lag61 = lag(DryBulb, 61),
+         DryBulb_lag62 = lag(DryBulb, 62),
+         DryBulb_lag63 = lag(DryBulb, 63),
+         DryBulb_lag64 = lag(DryBulb, 64),
+         DryBulb_lag65 = lag(DryBulb, 65),
+         DryBulb_lag66 = lag(DryBulb, 66),
+         DryBulb_lag67 = lag(DryBulb, 67),
+         DryBulb_lag68 = lag(DryBulb, 68),
+         DryBulb_lag69 = lag(DryBulb, 69),
+         DryBulb_lag70 = lag(DryBulb, 70),
+         DryBulb_lag71 = lag(DryBulb, 71),
+         DryBulb_lag72 = lag(DryBulb, 72),
+         DewPnt_lag1 = lag(DewPnt, 1),
+         DewPnt_lag2 = lag(DewPnt, 2),
+         DewPnt_lag3 = lag(DewPnt, 3),
+         DewPnt_lag4 = lag(DewPnt, 4),
+         DewPnt_lag5 = lag(DewPnt, 5),
+         DewPnt_lag6 = lag(DewPnt, 6),
+         DewPnt_lag7 = lag(DewPnt, 7),
+         DewPnt_lag8 = lag(DewPnt, 8),
+         DewPnt_lag9 = lag(DewPnt, 9),
+         DewPnt_lag10 = lag(DewPnt, 10),
+         DewPnt_lag11 = lag(DewPnt, 11),
+         DewPnt_lag12 = lag(DewPnt, 12),
+         DewPnt_lag13 = lag(DewPnt, 13),
+         DewPnt_lag14 = lag(DewPnt, 14),
+         DewPnt_lag15 = lag(DewPnt, 15),
+         DewPnt_lag16 = lag(DewPnt, 16),
+         DewPnt_lag17 = lag(DewPnt, 17),
+         DewPnt_lag18 = lag(DewPnt, 18),
+         DewPnt_lag19 = lag(DewPnt, 19),
+         DewPnt_lag20 = lag(DewPnt, 20),
+         DewPnt_lag21 = lag(DewPnt, 21),
+         DewPnt_lag22 = lag(DewPnt, 22),
+         DewPnt_lag23 = lag(DewPnt, 23),
+         DewPnt_lag24 = lag(DewPnt, 24),
+         DewPnt_lag25 = lag(DewPnt, 25),
+         DewPnt_lag26 = lag(DewPnt, 26),
+         DewPnt_lag27 = lag(DewPnt, 27),
+         DewPnt_lag28 = lag(DewPnt, 28),
+         DewPnt_lag29 = lag(DewPnt, 29),
+         DewPnt_lag30 = lag(DewPnt, 30),
+         DewPnt_lag31 = lag(DewPnt, 31),
+         DewPnt_lag32 = lag(DewPnt, 32),
+         DewPnt_lag33 = lag(DewPnt, 33),
+         DewPnt_lag34 = lag(DewPnt, 34),
+         DewPnt_lag35 = lag(DewPnt, 35),
+         DewPnt_lag36 = lag(DewPnt, 36),
+         DewPnt_lag37 = lag(DewPnt, 37),
+         DewPnt_lag38 = lag(DewPnt, 38),
+         DewPnt_lag39 = lag(DewPnt, 39),
+         DewPnt_lag40 = lag(DewPnt, 40),
+         DewPnt_lag41 = lag(DewPnt, 41),
+         DewPnt_lag42 = lag(DewPnt, 42),
+         DewPnt_lag43 = lag(DewPnt, 43),
+         DewPnt_lag44 = lag(DewPnt, 44),
+         DewPnt_lag45 = lag(DewPnt, 45),
+         DewPnt_lag46 = lag(DewPnt, 46),
+         DewPnt_lag47 = lag(DewPnt, 47),
+         DewPnt_lag48 = lag(DewPnt, 48),
+         DewPnt_lag49 = lag(DewPnt, 49),
+         DewPnt_lag50 = lag(DewPnt, 50),
+         DewPnt_lag51 = lag(DewPnt, 51),
+         DewPnt_lag52 = lag(DewPnt, 52),
+         DewPnt_lag53 = lag(DewPnt, 53),
+         DewPnt_lag54 = lag(DewPnt, 54),
+         DewPnt_lag55 = lag(DewPnt, 55),
+         DewPnt_lag56 = lag(DewPnt, 56),
+         DewPnt_lag57 = lag(DewPnt, 57),
+         DewPnt_lag58 = lag(DewPnt, 58),
+         DewPnt_lag59 = lag(DewPnt, 59),
+         DewPnt_lag60 = lag(DewPnt, 60),
+         DewPnt_lag61 = lag(DewPnt, 61),
+         DewPnt_lag62 = lag(DewPnt, 62),
+         DewPnt_lag63 = lag(DewPnt, 63),
+         DewPnt_lag64 = lag(DewPnt, 64),
+         DewPnt_lag65 = lag(DewPnt, 65),
+         DewPnt_lag66 = lag(DewPnt, 66),
+         DewPnt_lag67 = lag(DewPnt, 67),
+         DewPnt_lag68 = lag(DewPnt, 68),
+         DewPnt_lag69 = lag(DewPnt, 69),
+         DewPnt_lag70 = lag(DewPnt, 70),
+         DewPnt_lag71 = lag(DewPnt, 71),
+         DewPnt_lag72 = lag(DewPnt, 72))
+
+train_data <- filter(smd, Year >= 2012, Year < 2015)
+
+test_data <- filter(smd, Year == 2015)
 ```
 
 # TODO
 
 * Think about converting Hour from hour ending to hour beginning. Ensures that the date and hour match up.
-* It looks like there is one observation missing early March and two observations being grouped together at beginning of November for each year and zone. Most likely daylight savings. Check if this is in the source data or if it is caused by aggregation in the load_smd_data function.
-* Still need to figure out why those NA values are sneaking in to smd dataframe.
-* Maybe start a new vignette investigating the impact of lags on xgboost accuracy? Use a cut down data set size (1 year, demand and temperature only?) to speed up model fitting. From some basic testing it looks as though lags do improve the fit.
-    * Remove the adhoc lagged variable creation from within this doc (model 3)
-    * Decide if I also want to include lagged demand values.
-    * Decide if I should use xgbTree or xgbLinear
+* Maybe have 2 models. One for DST months and another for non-daylight savings times?
 
 # Introduction
 
@@ -98,96 +250,46 @@ Note that since we are not given forecasts of weather data we will have to rely 
 ## Model training
 
 ```{r}
-iZ <- "SEMASS"
+xgb_fit <- list()
 
-train_data <- filter(smd,
-                     Year >= 2011,
-                     Year < 2015,
-                     Zone == iZ) %>% 
-  mutate(DryBulb_lag1 = lag(DryBulb, 1))
+xgb_ctrl <- trainControl(method = "repeatedcv",
+                         number = 5,
+                         allowParallel = TRUE)
 
-test_data <- filter(smd,
-                    Year >= 2015,
-                    Zone == iZ) %>% 
-  mutate(DryBulb_lag1 = lag(DryBulb, 1))
+xgb_fit[["naive_linear"]] <- train(Demand ~ poly(DryBulb, 2) + Period + DoW + Holiday_flag + Month,
+                                   data = train_data,
+                                   method="lm",
+                                   trControl = xgb_ctrl)
 
-maeSummary <- function (data,
-                        lev = NULL,
-                        model = NULL) {
-  out <- mean(abs(data$obs - data$pred), na.rm=TRUE)
-  names(out) <- "MAE"
-  out
-}
-
-fitControl <- trainControl(
-  method = "timeslice",
-  initialWindow = ceiling(dim(train_data)[1]*0.7),
-  horizon=24*7,
-  fixedWindow=FALSE,
-  summaryFunction = maeSummary)
-
-smd_fit <- list()
-#mae <- rep(NA, 24)
+xgb_grid_linear <- expand.grid(nrounds = 300,
+                               lambda = 0,
+                               alpha = 0,
+                               eta = c(0.01, 0.1))
 
 system.time({
-  smd_fit[[1]] <- train(Demand ~ poly(DryBulb, 2, raw = TRUE) + Weekend + DoW + Period + Month,
-                        data = train_data,
-                        method="lm",
-                        metric="MAE",
-                        maximize = FALSE)#,
-  #trControl = fitControl)
+  xgb_fit[["xgbLinear"]] <-  train(Demand ~ DryBulb + Period + DoW + Holiday_flag + DoY,
+                                   data = train_data,
+                                   method="xgbLinear",
+                                   trControl = xgb_ctrl,
+                                   tuneGrid = xgb_grid_linear,
+                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
 
+test_data$Demand_pred_lm <- predict(xgb_fit[["naive_linear"]], newdata = test_data)
+test_data$Demand_pred_xgb <- predict(xgb_fit[["xgbLinear"]], newdata = test_data)
+#test_data$Demand_pred3 <- predict(xgb_fit[[3]], newdata = test_data)
 
-xgb_grid <- expand.grid(nrounds = 500,
-                          eta = c(0.01,0.1),
-                          max_depth = c(2,6,10),
-                          gamma = 1,
-                          colsample_bytree = 1,
-                          min_child_weight = 1)
-
-system.time({
-  smd_fit[[2]] <- train(Demand ~ DryBulb + DoW + Holiday_flag + Period + DoY,
-                        data = train_data,
-                        method="xgbTree",
-                        metric="MAE",
-                        maximize = FALSE,
-                        tuneGrid = xgb_grid)#,
-  #trControl = fitControl)
-  #mae[i+1] <- model_h[[i+1]]$results$MAE
-})
-
-system.time({
-  smd_fit[[3]] <- train(Demand ~ DryBulb + DryBulb_lag1 + DoW + Holiday_flag + Period + DoY,
-                        data = train_data,
-                        method="xgbTree",
-                        metric="MAE",
-                        maximize = FALSE,
-                        tuneGrid = xgb_grid)#,
-  #trControl = fitControl)
-  #mae[i+1] <- model_h[[i+1]]$results$MAE
-})
-```
-
-```{r}
-# train_data$Demand_pred1 <- predict(smd_fit[[1]], newdata = train_data)
-# train_data$Demand_pred2 <- predict(smd_fit[[2]], newdata = train_data)
-test_data$Demand_pred1 <- predict(smd_fit[[1]], newdata = test_data)
-test_data$Demand_pred2 <- predict(smd_fit[[2]], newdata = test_data)
-test_data$Demand_pred3 <- predict(smd_fit[[3]], newdata = test_data)
-
-# train_data %>% 
-#   filter(Year == 2014) %>% 
 test_data %>%
-  filter(Year == 2015, Month %in% c("Jun")) %>%
-  #filter(Year == 2015) %>% 
+  filter(Year == 2015, Month %in% c("Mar")) %>%
   plot_ly(x = ~ts) %>% 
   add_trace(y = ~Demand, name = "Actual", type = "scatter", mode = "lines") %>% 
-  add_trace(y = ~Demand_pred1, name = "lm", type = "scatter", mode = "lines") %>% 
-  add_trace(y = ~Demand_pred2, name = "xgbTree", type = "scatter", mode = "lines") %>% 
-  add_trace(y = ~Demand_pred3, name = "xgbTree_lag", type = "scatter", mode = "lines") %>% 
+  add_trace(y = ~Demand_pred_lm, name = "lm", type = "scatter", mode = "lines") %>% 
+  add_trace(y = ~Demand_pred_xgb, name = "xgbLinear", type = "scatter", mode = "lines") %>% 
+  #add_trace(y = ~Demand_pred3, name = "xgbTree_lag", type = "scatter", mode = "lines") %>% 
   layout(title = "Actuals and model predictions")
 ```
+
+Worryingly, we can see that once daylight savings kicks in on March 8th, the time of the peak shifts back one period (from 19 to 20). So, basically, it looks like demand is behaving as before (peak still occurs at same non-DST time), but because we have shifted to DST it looks like the peak has been shifted back by an hour. This may be affecting the model fit. Should probably build two models
 
 
 ### Performance on test set
@@ -196,12 +298,10 @@ Overall performance
 
 ```{r}
 test_data %>% 
-  mutate(se1 = (Demand - Demand_pred1)^2,
-         se2 = (Demand - Demand_pred2)^2,
-         se3 = (Demand - Demand_pred3)^2) %>% 
-  summarise(mse1 = mean(se1)^0.5,
-            mse2 = mean(se2)^0.5,
-            mse3 = mean(se3)^0.5) %>% 
+  mutate(se_lm = (Demand - Demand_pred_lm)^2,
+         se_xgb = (Demand - Demand_pred_xgb)^2) %>% 
+  summarise(mse_lm = mean(se_lm)^0.5,
+            mse_xgb = mean(se_xgb)^0.5) %>%
   gather(Model, Score) %>% 
   datatable()
 ```
@@ -209,14 +309,14 @@ test_data %>%
 Performance by load zone
 
 ```{r}
-test_data %>% 
-  mutate(se1 = (Demand - Demand_pred1)^2,
-         se2 = (Demand - Demand_pred2)^2) %>% 
-  group_by(Zone) %>% 
-  summarise(mse1 = mean(se1)^0.5,
-            mse2 = mean(se2)^0.5) %>% 
-  gather(Model, Score, -Zone) %>% 
-  datatable()
+# test_data %>% 
+#   mutate(se1 = (Demand - Demand_pred1)^2,
+#          se2 = (Demand - Demand_pred2)^2) %>% 
+#   group_by(Zone) %>% 
+#   summarise(mse1 = mean(se1)^0.5,
+#             mse2 = mean(se2)^0.5) %>% 
+#   gather(Model, Score, -Zone) %>% 
+#   datatable()
 ```
 
 
