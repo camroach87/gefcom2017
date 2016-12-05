@@ -31,11 +31,13 @@ require(doMC)
 registerDoMC(cores = 3)
 
 source("../R/loadData.R")
+source("../R/clean-smd-data.R")
 
 load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
 load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
 
 smd <- load_smd_data(load_zones, root_dir = "./..")
+smd <- clean_smd_data(smd, root_dir = "./..")
 ```
 
 # TODO
