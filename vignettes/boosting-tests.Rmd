@@ -213,7 +213,7 @@ smd <- smd %>%
 
 train_data <- filter(smd, Year >= 2012, Year < 2015)
 
-test_data <- filter(smd, Year >= 2015)
+test_data <- filter(smd, Year == 2015)
 
 head(train_data)
 ```
@@ -420,7 +420,7 @@ ggplot(performance_df, aes(x=Model, y=RMSE)) +
 
 Let's calculate the RMSE scores for all of these models on the test data set. This will give a better idea of how well these models are really performing.
 
-Amazingly the model that uses all the lags again performs best (model 9). As expected, performance for all models is slightly worse on the test set, but the relative model performance remains similar.
+As expected, the overspecified model xgbLinear_lag9 performs relatively worse when using the test set. Weirdly, all the other models show improved performance when compared to the CV results, which is unexpected. This could be due to 2015 being an easier year to predict, but it is worth investigating. Model xgbLinear_lag5 is the best performed model.
 
 ```{r test_data_rmse}
 performance_df <- NULL
