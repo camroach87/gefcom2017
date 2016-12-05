@@ -43,7 +43,7 @@ smd <- clean_smd_data(smd, root_dir = "./..")
 
 # TODO
 
-* Should try rerunning this once all the data issues have been sorted out (weird spike and drop possibly due to daylight savings)
+* ~~Should try rerunning this once all the data issues have been sorted out (weird spike and drop possibly due to daylight savings)~~ DONE
 * Think about if K-fold CV is correct. I think it is since we're doing an ex-ante forecast here.
 
 # Introduction
