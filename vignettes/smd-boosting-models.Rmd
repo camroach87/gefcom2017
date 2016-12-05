@@ -413,13 +413,15 @@ for (iM in names(xgb_fit)) {
     bind_rows(performance_df)
 }
 
-performance_df$Model <- factor(performance_df$Model, levels = names(xgb_fit),
-                               ordered = TRUE)
+performance_df <- performance_df %>% 
+  arrange(desc(RMSE)) %>% 
+  mutate(Model = factor(Model, levels = Model, ordered = TRUE))
 
 ggplot(performance_df, aes(x=Model, y=RMSE)) +
   geom_point() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  ggtitle("RMSE for boosted models")
+  ggtitle("RMSE for boosted models",
+          "Ordered by performance")
 ```
 
 
