@@ -9,16 +9,18 @@ output:
       collapsed: false
 ---
 
-There are several oddities that need to be tidied up in the raw data.
-
 # Daylight savings
+
+There are several oddities caused by daylight savings time (DST) that need to be tidied up in the raw data.
+
+## Electricity readings
 
 When the time shifts forward by an hour the skipped hour has its row filled with zeros. When time moves back by an hour the repeated hour has two hours worth of demand summed together. These issues both need to be corrected for. _This only applies to electricity values and does not apply to temperature readings._
 
 
 ## Temperature readings
 
-When daylight savings time (DST) comes into effect in March and time skips forward by an hour we do not observe any electricity measurements - the entire row is zero as expected. However, we do see dry bulb and dew point temperature readings. What do these represent?? They do not appear to be duplicated values nor is there any interpolation taking place.
+When DST comes into effect in March and time skips forward by an hour we do not observe any electricity measurements - the entire row is zero as expected. However, we do see dry bulb and dew point temperature readings. What do these represent?? They do not appear to be duplicated values nor is there any interpolation taking place.
 
 When DST ends we do not observe two hours worth of values being summed together.
 
