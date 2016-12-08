@@ -234,7 +234,7 @@ xgb_grid_linear <- expand.grid(nrounds = 300,
                                eta = c(0.01, 0.1))
 
 system.time({
-  xgb_fit[["xgbLinear_lag10"]] <-  train_data %>% 
+  xgb_fit <- train_data %>% 
     select(Demand, Period, starts_with("DryBulb"), starts_with("DewPnt")) %>% 
     mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
               scale, center = FALSE) %>% 
