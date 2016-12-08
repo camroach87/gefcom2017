@@ -377,7 +377,7 @@ So we see that the model that uses all lags performs best. It looks as though `x
 
 # Testing a lot of variables
 
-What happens if we create heaps of lagged predictors for both dry bulb AND dew point temperatures? Let's check!
+What happens if we create heaps of lagged predictors for both dry bulb AND dew point temperatures? Let's check! We will use all predictors in model 9 and 10, but model 10 also has L1 regularization and scaled predictors.
 
 ```{r crazy_predictor_test}
 system.time({
@@ -390,11 +390,29 @@ system.time({
           tuneGrid = xgb_grid_linear,
           nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
 })
+
+xgb_grid_linear <- expand.grid(nrounds = 300,
+                               lambda = 0,
+                               alpha = 100, #c(1, 5, 10, 20, 50, 100),
+                               eta = c(0.01, 0.1))
+
+system.time({
+  xgb_fit[["xgbLinear_lag10"]] <-  train_data %>% 
+    select(Demand, Period, starts_with("DryBulb"), starts_with("DewPnt")) %>% 
+    mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+              scale, center = FALSE) %>% 
+    train(Demand ~ . ,
+          data = .,
+          method="xgbLinear",
+          trControl = xgb_ctrl,
+          tuneGrid = xgb_grid_linear,
+          nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+})
 ```
 
 ## Results
 
-Plotting our new crazy model's RMSE against the previous models shows that it outperforms all the others. However, this performance is based on the training and validation data set. We still need to assess how each model performs on the test data set.
+Plotting our new high-dimensional model RMSEs against the previous models shows that they ------------------. However, this performance is based on the training and validation data set. We still need to assess how each model performs on the test data set.
 
 ```{r crazy_model_performance}
 performance_df <- NULL
@@ -424,7 +442,7 @@ As expected, the overspecified model xgbLinear_lag9 performs relatively worse wh
 
 ```{r test_data_rmse}
 performance_df <- NULL
-for (iM in names(xgb_fit)) {
+for (iM in names(xgb_fit)[1:11]) {
   rmse <- mean((predict(xgb_fit[[iM]], test_data) - test_data$Demand)^2)^0.5
   
   performance_df <- data.frame(
@@ -433,6 +451,23 @@ for (iM in names(xgb_fit)) {
   ) %>% 
     bind_rows(performance_df)
 }
+
+# models using scaled data
+for (iM in names(xgb_fit)[-(1:11)]) {
+  scaled_test_data <- test_data %>% 
+    select(Demand, Period, starts_with("DryBulb"), starts_with("DewPnt")) %>% 
+    mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+              scale, center = FALSE)
+  
+  rmse <- mean((predict(xgb_fit[[iM]], scaled_test_data) - scaled_test_data$Demand)^2)^0.5
+  
+  performance_df <- data.frame(
+    Model = iM,
+    RMSE = rmse
+  ) %>% 
+    bind_rows(performance_df)
+}
+
 
 performance_df$Model <- factor(performance_df$Model,
                                levels = names(xgb_fit),
