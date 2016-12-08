@@ -219,170 +219,25 @@ head(train_data)
 ```
 
 
-# xgbTree vs xgbLinear
+# Boosting with L1-regularization
 
-Here we ignore any lagged variables and only test the predictive power of `xgbTree` against `xgbLinear` using DryBulb and Period as the only covariates.
+We will use all predictors and test a numer of weights for L1 regularization. All predictors (temperatures and lagged temperatures) have been scaled except for period of day, which is treated as a categorical variable.
 
-```{r xgbTree_vs_xgbLinear}
-xgb_fit <- list()
-
+```{r crazy_predictor_test}
 xgb_ctrl <- trainControl(method = "repeatedcv",
                          number = 5,
                          allowParallel = TRUE)
 
-xgb_grid_tree <- expand.grid(nrounds = 500,
-                        eta = c(0.01,0.1),
-                        max_depth = 10,
-                        gamma = 1,
-                        colsample_bytree = 1,
-                        min_child_weight = 1,
-                        subsample = 1)
-
-system.time({
-  xgb_fit[["xgbTree"]] <- train(Demand ~ DryBulb + Period,
-                                data = train_data,
-                                method="xgbTree",
-                                trControl = xgb_ctrl,
-                                tuneGrid = xgb_grid_tree,
-                                nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
-})
-
 xgb_grid_linear <- expand.grid(nrounds = 300,
                                lambda = 0,
-                               alpha = 0,
+                               alpha = c(0, 1, 5, 10, 25, 50, 100, 1000),
                                eta = c(0.01, 0.1))
 
 system.time({
-  xgb_fit[["xgbLinear"]] <-  train(Demand ~ DryBulb + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
-})
-
-xgb_fit
-```
-
-## Results
-
-It looks like `xgbTree` and `xgbLinear` perform roughly the same, with RMSE values around 70 in their best performed cases. These RMSE values have been calculated using K-fold cross validation with 5 folds. The linear booster is roughly three times faster to fit than the tree boster.
-
-
-# Lagged variable performance
-
-We will proceed with the linear booster as it appears to be quicker to fit.
-
-```{r train_lag_models}
-system.time({
-  xgb_fit[["xgbLinear_l1"]] <-  train(Demand ~ DryBulb + DryBulb_lag1 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
-})
-
-system.time({
-  xgb_fit[["xgbLinear_l2"]] <-  train(Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
-})
-
-system.time({
-  xgb_fit[["xgbLinear_lag3"]] <-  train(Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + DryBulb_lag3 + DryBulb_lag4 + DryBulb_lag5 + DryBulb_lag6 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
-})
-
-system.time({
-  xgb_fit[["xgbLinear_lag4"]] <-  train(Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + DryBulb_lag3 + DryBulb_lag4 + DryBulb_lag5 + DryBulb_lag6 + DryBulb_lag24 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
-})
-
-system.time({
-  xgb_fit[["xgbLinear_lag5"]] <-  train(Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + DryBulb_lag3 + DryBulb_lag4 + DryBulb_lag5 + DryBulb_lag6 + DryBulb_lag24 + DryBulb_lag48 + DryBulb_lag72 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
-})
-
-system.time({
-  xgb_fit[["xgbLinear_lag6"]] <-  train(Demand ~ DryBulb + DryBulb_lag24 + DryBulb_lag48 + DryBulb_lag72 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
-})
-
-system.time({
-  xgb_fit[["xgbLinear_lag7"]] <-  train(Demand ~ DryBulb + DryBulb_lag3 + DryBulb_lag6 + DryBulb_lag24 + DryBulb_lag48 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
-})
-
-system.time({
-  xgb_fit[["xgbLinear_lag8"]] <-  train(Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + DryBulb_lag3 + DryBulb_lag4 + DryBulb_lag5 + DryBulb_lag6 + DryBulb_lag24 + DryBulb_lag48 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
-})
-```
-
-## Results
-
-Interestingly the more predictors we add the longer it takes to fit a model. This probably shouldn't come as a surprise given it means there is more data that the algorithm needs to deal with.
-
-The RMSE scores for each of the models is plotted below.
-
-```{r lagged_model_performance}
-performance_df <- NULL
-for (iM in names(xgb_fit)) {
-  performance_df <- data.frame(
-    Model = iM,
-    RMSE = min(xgb_fit[[iM]]$results$RMSE)
-  ) %>% 
-    bind_rows(performance_df)
-}
-
-performance_df$Model <- factor(performance_df$Model,
-                               levels = names(xgb_fit),
-                               ordered = TRUE)
-
-ggplot(performance_df, aes(x=Model, y=RMSE)) +
-  geom_point() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  ggtitle("RMSE for boosted models")
-```
-
-So we see that the model that uses all lags performs best. It looks as though `xgboost` is good at handling extra variables.
-
-# Testing a lot of variables
-
-What happens if we create heaps of lagged predictors for both dry bulb AND dew point temperatures? Let's check!
-
-```{r crazy_predictor_test}
-system.time({
-  xgb_fit[["xgbLinear_lag9"]] <-  train_data %>% 
+  xgb_fit[["xgbLinear_lag10"]] <-  train_data %>% 
     select(Demand, Period, starts_with("DryBulb"), starts_with("DewPnt")) %>% 
+    mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+              scale, center = FALSE) %>% 
     train(Demand ~ . ,
           data = .,
           method="xgbLinear",
@@ -394,7 +249,7 @@ system.time({
 
 ## Results
 
-Plotting our new high-dimensional model's RMSEs against the previous models shows that it outperforms them. However, this performance is based on the training and validation data set and is likely due to overfitting. We still need to assess how each model performs on the test data set.
+**TODO**
 
 ```{r crazy_model_performance}
 performance_df <- NULL
@@ -420,11 +275,11 @@ ggplot(performance_df, aes(x=Model, y=RMSE)) +
 
 Let's calculate the RMSE scores for all of these models on the test data set. This will give a better idea of how well these models are really performing.
 
-As expected, the overspecified model xgbLinear_lag9 performs relatively worse when using the test set. Weirdly, all the other models show improved performance when compared to the CV results, which is unexpected. This could be due to 2015 being an easier year to predict, but it is worth investigating. Model xgbLinear_lag5 is the best performed model.
+**TODO**
 
 ```{r test_data_rmse}
 performance_df <- NULL
-for (iM in names(xgb_fit)) {
+for (iM in names(xgb_fit)[1:11]) {
   rmse <- mean((predict(xgb_fit[[iM]], test_data) - test_data$Demand)^2)^0.5
   
   performance_df <- data.frame(
@@ -433,6 +288,23 @@ for (iM in names(xgb_fit)) {
   ) %>% 
     bind_rows(performance_df)
 }
+
+# models using scaled data
+for (iM in names(xgb_fit)[-(1:11)]) {
+  scaled_test_data <- test_data %>% 
+    select(Demand, Period, starts_with("DryBulb"), starts_with("DewPnt")) %>% 
+    mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+              scale, center = FALSE)
+  
+  rmse <- mean((predict(xgb_fit[[iM]], scaled_test_data) - scaled_test_data$Demand)^2)^0.5
+  
+  performance_df <- data.frame(
+    Model = iM,
+    RMSE = rmse
+  ) %>% 
+    bind_rows(performance_df)
+}
+
 
 performance_df$Model <- factor(performance_df$Model,
                                levels = names(xgb_fit),
