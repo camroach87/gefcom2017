@@ -1,0 +1,71 @@
+---
+title: "Bootstrapping"
+author: Cameron Roach
+output: 
+  html_notebook: 
+    number_sections: yes
+    toc: yes
+    toc_float:
+      collapsed: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+
+rm(list=ls())
+
+require(dplyr)
+require(tidyr)
+require(readxl)
+require(lubridate)
+require(ggplot2)
+require(plotly)
+require(DT)
+require(caret)
+require(myhelpr)
+require(doMC)
+
+registerDoMC(cores = 3)
+
+source("../R/loadData.R")
+source("../R/clean-smd-data.R")
+
+load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
+load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
+
+smd <- load_smd_data(load_zones, root_dir = "./..")
+smd <- clean_smd_data(smd, root_dir = "./..")
+
+iZ <- "VT"
+
+smd <- filter(smd, Zone == iZ)
+```
+
+# Weather bootstrapping
+
+Correlogram for dry bulb temperature and dew point temperature shown below. Serial correlations for 720 lags (30 days) have been calculated.
+
+```{r weather_correlation}
+with(smd, acf(DryBulb, lag.max = 30*24))
+
+with(smd, acf(DewPnt, lag.max = 30*24))
+```
+
+
+
+```{r weather_bootstrapping}
+
+```
+
+
+ # Residual boostrapping
+ 
+ 
+ 
+ ```{r residual_bootstrapping}
+
+```
