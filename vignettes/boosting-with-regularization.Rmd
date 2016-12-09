@@ -1,5 +1,5 @@
 ---
-title: "Boosting tests"
+title: "Boosting with regularization"
 author: Cameron Roach
 output: 
   html_notebook: 
@@ -42,21 +42,11 @@ smd <- load_smd_data(load_zones, root_dir = "./..")
 smd <- clean_smd_data(smd, root_dir = "./..")
 ```
 
-# TODO
-
-* ~~Should try rerunning this once all the data issues have been sorted out (weird spike and drop possibly due to daylight savings)~~ DONE
-* Think about if K-fold CV is correct. I think it is since we're doing an ex-ante forecast here.
-
 # Introduction
 
-Here I wish to test,
-
-* Which of xgbTree and xgbLinear perform best when forecasting
-* What impact does lagged variables have on model performance when boosting?
+Here I wish to test the impact of a L1 and L2 regularization on model accuracy when using boosting.
 
 Electricity demand in the ME load zone will be used. Only working days will be considered (weekends and holidays are filtered). Dry bulb temperature and lags will be used as a predictors. Models will be assessed against each other using RMSE.
-
-In addition to the xgboost models a simple linear regression model will be fitted to serve as a baseline.
 
 ## Lagged variable creation
 
@@ -224,18 +214,18 @@ head(train_data)
 
 We will use all predictors and test a numer of weights for L1 regularization. All predictors (temperatures and lagged temperatures) have been scaled except for period of day, which is treated as a categorical variable.
 
-```{r crazy_predictor_test}
+```{r fit_boost_l1_reg}
 xgb_ctrl <- trainControl(method = "repeatedcv",
                          number = 5,
                          allowParallel = TRUE)
 
 xgb_grid_linear <- expand.grid(nrounds = 300,
+                               alpha = 10^((0:8)/2),
                                lambda = 0,
-                               alpha = c(0, 1, 5, 10, 25, 50, 100, 1000),
-                               eta = c(0.01, 0.1))
+                               eta = 0.1)
 
 system.time({
-  xgb_fit <- train_data %>% 
+  xgb_l1_fit <- train_data %>% 
     select(Demand, Period, starts_with("DryBulb"), starts_with("DewPnt")) %>% 
     mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
               scale, center = FALSE) %>% 
@@ -248,72 +238,95 @@ system.time({
 })
 ```
 
-## Results
+## L1-regularization results
 
-**TODO**
+We see lowest RMSE's when `alpha` is set to 1000.
 
-```{r crazy_model_performance}
-performance_df <- NULL
-for (iM in names(xgb_fit)) {
-  performance_df <- data.frame(
-    Model = iM,
-    RMSE = min(xgb_fit[[iM]]$results$RMSE)
-  ) %>% 
-    bind_rows(performance_df)
-}
+```{r model_performance_l1}
+xgb_l1_fit
 
-performance_df$Model <- factor(performance_df$Model,
-                               levels = names(xgb_fit),
-                               ordered = TRUE)
-
-ggplot(performance_df, aes(x=Model, y=RMSE)) +
-  geom_point() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  ggtitle("RMSE for boosted models")
+ggplot(xgb_l1_fit) +
+  scale_x_log10() +
+  ggtitle("L1 model performance")
 ```
 
-# Performance of models on test data
 
-Let's calculate the RMSE scores for all of these models on the test data set. This will give a better idea of how well these models are really performing.
 
-**TODO**
+# Boosting with L2-regularization
 
-```{r test_data_rmse}
-performance_df <- NULL
-for (iM in names(xgb_fit)[1:11]) {
-  rmse <- mean((predict(xgb_fit[[iM]], test_data) - test_data$Demand)^2)^0.5
-  
-  performance_df <- data.frame(
-    Model = iM,
-    RMSE = rmse
-  ) %>% 
-    bind_rows(performance_df)
-}
+We will use all predictors and test a numer of weights for L2 regularization. All predictors (temperatures and lagged temperatures) have been scaled except for period of day, which is treated as a categorical variable.
 
-# models using scaled data
-for (iM in names(xgb_fit)[-(1:11)]) {
-  scaled_test_data <- test_data %>% 
+```{r fit_boost_l2_reg}
+xgb_ctrl <- trainControl(method = "repeatedcv",
+                         number = 5,
+                         allowParallel = TRUE)
+
+xgb_grid_linear <- expand.grid(nrounds = 300,
+                               alpha = 0,
+                               lambda = 10^((0:8)/2),
+                               eta = 0.1)
+
+system.time({
+  xgb_l2_fit <- train_data %>% 
+    select(Demand, Period, starts_with("DryBulb"), starts_with("DewPnt")) %>% 
+    mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
+              scale, center = FALSE) %>% 
+    train(Demand ~ . ,
+          data = .,
+          method="xgbLinear",
+          trControl = xgb_ctrl,
+          tuneGrid = xgb_grid_linear,
+          nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+})
+```
+
+## L2-regularization results
+
+We see lowest RMSE's when `lambda` is set to 100. It looks as though the L2-regularization produces significantly better results than L1. This is most likely due to the strong correlation in the predictor variables. L1 regularization will give quite different values to correlated variables, whereas L2 regularization gives similar values (see ISLR p. 261).
+
+```{r model_performance_l2}
+xgb_l2_fit
+
+ggplot(xgb_l2_fit) +
+  scale_x_log10() +
+  ggtitle("L2 model performance")
+```
+
+# Test data results
+
+Let's calculate the RMSE score for the fitted model on the test data set. This will give a better idea of how well it really performs.
+
+```{r test_performance}
+scaled_test_data <-  test_data %>% 
     select(Demand, Period, starts_with("DryBulb"), starts_with("DewPnt")) %>% 
     mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
               scale, center = FALSE)
-  
-  rmse <- mean((predict(xgb_fit[[iM]], scaled_test_data) - scaled_test_data$Demand)^2)^0.5
-  
-  performance_df <- data.frame(
-    Model = iM,
-    RMSE = rmse
-  ) %>% 
-    bind_rows(performance_df)
-}
 
+test_data$Demand_pred_l1 <- predict(xgb_l1_fit, scaled_test_data)
+test_data$Demand_pred_l2 <- predict(xgb_l2_fit, scaled_test_data)
 
-performance_df$Model <- factor(performance_df$Model,
-                               levels = names(xgb_fit),
-                               ordered = TRUE)
+cat("RMSE of L1 model is:",
+     mean((test_data$Demand_pred_l1 - test_data$Demand)^2)^0.5,
+    "\n")
+cat("RMSE of L2 model is:",
+     mean((test_data$Demand_pred_l2 - test_data$Demand)^2)^0.5,
+    "\n")
+```
 
-ggplot(performance_df, aes(x=Model, y=RMSE)) +
-  geom_point() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  ggtitle("RMSE for boosted models")
+This is quite a drop in performance. It's actually worse than what we see for some of the models in the previous doc, boosting-tests.Rmd.
+
+When we plot the predictions we see there is quite a lot of variance.
+
+```{r}
+test_data %>%
+  filter(Month == "Jun") %>% 
+  plot_ly(x = ~ts) %>%
+  add_trace(y = ~Demand, name = "Actual", type = "scatter", 
+            mode = "lines") %>% 
+  add_trace(y = ~Demand_pred_l1, name = "L1 regularization", type = "scatter", 
+            mode = "lines") %>% 
+  add_trace(y = ~Demand_pred_l2, name = "L2 regularization", type = "scatter", 
+            mode = "lines") %>% 
+  layout(title = "Actuals and model predictions")
 ```
 
