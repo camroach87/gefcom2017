@@ -45,6 +45,38 @@ iZ <- "VT"
 smd <- filter(smd, Zone == iZ)
 ```
 
+
+# Bootstrapping methodology
+
+Similar to the double seasonal block bootstrap by Hyndman and Shu (2010).
+
+## Psuedo-code
+
+The bootstrapping method will return date and time values so that any variable can be looked up later on. This will ensure any bootstrapped weather data will retain correlations between zones and with residuals.
+
+The parameters `delta1` and `delta2` set the amount of variation in the date chosen and the length of 
+
+**NOTE: Be careful when sampling at end of year. Make sure we move from one year to the next and don't accidentally sample from beginning => discontinuity!**
+
+```{r eval=FALSE}
+GET days in season
+SET delta1, delta2
+SET number of simulated seasons
+
+FOR number of simulated seasons
+  WHILE simulated season not complete
+    FOR current day of simulated season
+      GET random historical year
+      GET day near current day => current day + U(-delta1, delta1)
+      GET the next 14 + U(-delta2, delta2) dates starting from this day
+      APPEND these historical dates to current simulated season
+      SET index to next day of simulated season without data.
+
+GET weather data for dates and times in bootstrapped date-time data
+GET residual data for dates and times in bootstrapped date-time data
+```
+
+
 # Weather bootstrapping
 
 Correlogram for dry bulb temperature and dew point temperature shown below. Serial correlations for 720 lags (30 days) have been calculated.
@@ -54,7 +86,6 @@ with(smd, acf(DryBulb, lag.max = 30*24))
 
 with(smd, acf(DewPnt, lag.max = 30*24))
 ```
-
 
 
 ```{r weather_bootstrapping}
