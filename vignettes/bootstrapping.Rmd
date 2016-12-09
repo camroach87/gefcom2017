@@ -54,7 +54,7 @@ Similar to the double seasonal block bootstrap by Hyndman and Shu (2010).
 
 The bootstrapping method will return date and time values so that any variable can be looked up later on. This will ensure any bootstrapped weather data will retain correlations between zones and with residuals.
 
-The parameters `delta1` and `delta2` set the amount of variation in the date chosen and the length of 
+The parameters `delta1` and `delta2` set the amount of variation in the date chosen and the length of the block sampled.
 
 **NOTE: Be careful when sampling at end of year. Make sure we move from one year to the next and don't accidentally sample from beginning => discontinuity!**
 
@@ -97,7 +97,7 @@ with(smd, acf(DewPnt, lag.max = 30*24))
 ```
 
 
- # Residual bootstrapping
+# Residual bootstrapping
  
  
  
