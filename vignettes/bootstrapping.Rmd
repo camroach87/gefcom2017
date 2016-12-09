@@ -111,7 +111,7 @@ dbl_block_bs <- function(dates, start_date = today(), end_date = today() + 30,
   end_date <- as.Date(end_date)
   start_date <- as.Date(start_date)
   bs_length <- end_date - start_date + 1
-  
+  date_seq <- seq(start_date, end_date, 1)
   if (start_date >= end_date) stop("Start date greater than or equal to end date.")
   if (bs_length > 365) stop("Start and end dates should not be more than a year apart.")
   
@@ -141,22 +141,52 @@ dbl_block_bs <- function(dates, start_date = today(), end_date = today() + 30,
         block_loc <- block_loc_bkp
         next
       }
-      
       # update
       bs_tmp <- bind_rows(bs_tmp,
                           data.frame(Simulation = iS,
                                      Date = bs_dates))
       loc_date <- loc_date + block_length
     }
-    
     bs_tmp <- bs_tmp[1:bs_length,]
     bs_sim <- bind_rows(bs_sim, bs_tmp)
   }
-  
+  bs_sim$Date_seq <- rep(date_seq, n_sims)
   return(bs_sim)
 }
 ```
 
+Testing this function to make sure we have a uniform distribution of dates except near start and end date. There is a slight bump around 1st-4th March but this is likely due to resampling when we sample 29th February in a non-leap-year.
+
+```{r test_bs_function}
+#start_date = dmy("15/2/2016")
+#end_date = dmy("18/3/2016")
+start_date = dmy("1/10/2017")
+end_date = dmy("1/4/2018")-1
+# start_date = dmy("1/4/2017")
+# end_date = dmy("1/10/2017")-1
+n_sims = 1000
+avg_block_len = 14
+delta_loc = 3
+delta_len = 3
+
+bs_dates <- dbl_block_bs(smd$Date, start_date, end_date, n_sims, 
+                         avg_block_len, delta_loc, delta_len)
+
+
+table(ddmm = strftime(bs_dates$Date, "%m%d")) %>% 
+  data.frame() %>% 
+  mutate(ddmm = as.numeric(as.character(ddmm))) %>% 
+  ggplot(aes(x=ddmm, y=Freq)) + 
+  geom_col() + 
+  ggtitle("Number of observations per ddmm",
+          "ddmm used to see behaviour around 29/2")
+
+table(Year = year(bs_dates$Date)) %>% 
+  data.frame() %>% 
+  ggplot(aes(x=Year, y=Freq)) +
+  geom_col() +
+  ggtitle("Number of observations per year.")
+```
 
 
 
@@ -170,16 +200,98 @@ with(smd, acf(DryBulb, lag.max = 30*24))
 with(smd, acf(DewPnt, lag.max = 30*24))
 ```
 
+I'm not seeing anything too meaningful there. We'll stick with 14 days for the average bootstrap length as per Hyndman & Shu (2010).
 
-```{r weather_bootstrapping}
+**TODO: Once we update the ts values, all the other calendar variables are messed up. Need to rerun each simulation through a create dummys function.**
+
+```{r bootstrap_weather}
+system.time({
+  weather_bs <- smd %>% 
+    mutate(Date = as.Date(Date)) %>% 
+    right_join(bs_dates) %>% 
+    mutate(ts = ymd_h(paste(Date_seq, Hour)))
+})
+
+# TODO: Now create dummy variables for each simulation.
+```
+
+Time-series plots of the dry bulb temperature are shown for the historical data and 16 of the bootstrapped simulations. Only February is plotted. The simulated values don't look unreasonable compared to actual historical values.
+
+```{r}
+plot_month = 2
+weather_bs %>% 
+  filter(month(ts) == plot_month,
+         Simulation %in% sample(1:n_sims, 16)) %>% 
+  ggplot(aes(x = ts, y = DryBulb)) + 
+  geom_line(alpha = 0.3) +
+  facet_wrap(~Simulation) +
+  ggtitle("Simulated temperatures")
+
+smd %>% 
+  filter(month(ts) == plot_month) %>% 
+  ggplot(aes(x = ts, y = DryBulb)) + 
+  geom_line(alpha = 0.3) +
+  facet_wrap(~Year, scales="free_x") +
+  ggtitle("Historical temperatures")
 
 ```
+
+Smoothing all of the historical years and the simulated years shows pretty similar paths. The historical year smoother has a lot more variance as there are only 13 years compared to 1000 for the simulated set.
+
+```{r weather_bootstrapping}
+ggplot() +
+  geom_smooth(data = weather_bs %>% 
+                mutate(DoY = yday(ts),
+                       DoM = mday(ts),
+                       Month = factor(month(ts, label=T)), ordered=F),
+              aes(x = DoM, y = DryBulb, colour = "Simulation")) +
+  geom_smooth(data = smd %>%
+                filter(Month %in% unique(month(weather_bs$ts, label=T))) %>% 
+                mutate(DoM = mday(ts)),
+              aes(x = DoM, y = DryBulb, colour = "Historical")) +
+  facet_wrap(~Month) +
+  scale_colour_discrete(name = NULL) +
+  ggtitle("Smoothed dry bulb temperature.")
+```
+
+Smoothed daily profiles are shown below for each month. Again, the historical and simulated values align quite well.
+
+```{r}
+ggplot() +
+  geom_smooth(data = weather_bs %>% 
+                mutate(Hour = hour(ts),
+                       Month = factor(month(ts, label=T)), ordered=F),
+              aes(x = Hour, y = DryBulb, colour = "Simulation")) +
+  geom_smooth(data = smd %>% 
+                filter(Month %in% unique(month(weather_bs$ts, label=T))),
+              aes(x = Hour, y = DryBulb, colour = "Historical")) +
+  facet_wrap(~Month) +
+  scale_colour_discrete(name = NULL) +
+  ggtitle("Smoothed daily dry bulb temperature")
+```
+
+
+
 
 
 # Residual bootstrapping
+
+**IMPORTANT: Remember that residuals are only added to the peaks!!! Not the whole profile!!! Otherwise we would wind up with incredibly spiky profiles.**
  
+## Fit model and calculate residuals
+
+This needs to happen before the bootstrapping stage. Fit the best model and get residuals.
+
+**TODO**
+
+## Bootstrap residuals
+
+Just use the same bootstrap dates as for the weather.
+
+**TODO**
  
- 
- ```{r residual_bootstrapping}
+```{r residual_bootstrapping}
 
 ```
+
+**TODO: Check how bootstrapped residuals look.**
