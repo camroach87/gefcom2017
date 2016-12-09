@@ -1,12 +1,14 @@
 ---
 title: "Boosting with regularization"
-author: Cameron Roach
-output: 
-  html_notebook: 
+author: "Cameron Roach"
+output:
+  pdf_document:
+    toc: yes
+  html_notebook:
     number_sections: yes
     toc: yes
     toc_float:
-      collapsed: false
+      collapsed: no
 ---
 
 ```{r setup, include=FALSE}
@@ -206,8 +208,6 @@ smd <- smd %>%
 train_data <- filter(smd, Year >= 2012, Year < 2015)
 
 test_data <- filter(smd, Year == 2015)
-
-head(train_data)
 ```
 
 
@@ -235,7 +235,7 @@ system.time({
           method="xgbLinear",
           trControl = xgb_ctrl,
           tuneGrid = xgb_grid_linear,
-          nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+          nthread = 1) # avoids OpenMP and doMC clash
 })
 ```
 
@@ -277,7 +277,7 @@ system.time({
           method="xgbLinear",
           trControl = xgb_ctrl,
           tuneGrid = xgb_grid_linear,
-          nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+          nthread = 1)
 })
 ```
 

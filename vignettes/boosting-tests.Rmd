@@ -1,12 +1,14 @@
 ---
 title: "Boosting tests"
-author: Cameron Roach
-output: 
-  html_notebook: 
+author: "Cameron Roach"
+output:
+  pdf_document:
+    toc: yes
+  html_notebook:
     number_sections: yes
     toc: yes
     toc_float:
-      collapsed: false
+      collapsed: no
 ---
 
 ```{r setup, include=FALSE}
@@ -62,7 +64,7 @@ In addition to the xgboost models a simple linear regression model will be fitte
 ## Lagged variable creation
 
 ```{r gen_dummy_vars}
-iZ <- "ME"
+iZ <- "VT"
 
 smd <- smd %>%
   filter(Zone == iZ,
@@ -216,8 +218,6 @@ smd <- smd %>%
 train_data <- filter(smd, Year >= 2012, Year < 2015)
 
 test_data <- filter(smd, Year == 2015)
-
-head(train_data)
 ```
 
 
@@ -260,10 +260,8 @@ system.time({
                                    method="xgbLinear",
                                    trControl = xgb_ctrl,
                                    tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+                                   nthread = 1)
 })
-
-xgb_fit
 ```
 
 ## Results
@@ -277,75 +275,90 @@ We will proceed with the linear booster as it appears to be quicker to fit.
 
 ```{r train_lag_models}
 system.time({
-  xgb_fit[["xgbLinear_l1"]] <-  train(Demand ~ DryBulb + DryBulb_lag1 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+  xgb_fit[["xgbLinear_l1"]] <-  train(
+    Demand ~ DryBulb + DryBulb_lag1 + Period,
+    data = train_data,
+    method="xgbLinear",
+    trControl = xgb_ctrl,
+    tuneGrid = xgb_grid_linear,
+    nthread = 1)
 })
 
 system.time({
-  xgb_fit[["xgbLinear_l2"]] <-  train(Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+  xgb_fit[["xgbLinear_l2"]] <-  train(
+    Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + Period,
+    data = train_data,
+    method="xgbLinear",
+    trControl = xgb_ctrl,
+    tuneGrid = xgb_grid_linear,
+    nthread = 1)
 })
 
 system.time({
-  xgb_fit[["xgbLinear_lag3"]] <-  train(Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + DryBulb_lag3 + DryBulb_lag4 + DryBulb_lag5 + DryBulb_lag6 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+  xgb_fit[["xgbLinear_lag3"]] <-  train(
+    Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + DryBulb_lag3 + 
+      DryBulb_lag4 + DryBulb_lag5 + DryBulb_lag6 + Period,
+    data = train_data,
+    method="xgbLinear",
+    trControl = xgb_ctrl,
+    tuneGrid = xgb_grid_linear,
+    nthread = 1)
 })
 
 system.time({
-  xgb_fit[["xgbLinear_lag4"]] <-  train(Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + DryBulb_lag3 + DryBulb_lag4 + DryBulb_lag5 + DryBulb_lag6 + DryBulb_lag24 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+  xgb_fit[["xgbLinear_lag4"]] <-  train(
+    Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + DryBulb_lag3 + 
+      DryBulb_lag4 + DryBulb_lag5 + DryBulb_lag6 + DryBulb_lag24 + Period,
+    data = train_data,
+    method="xgbLinear",
+    trControl = xgb_ctrl,
+    tuneGrid = xgb_grid_linear,
+    nthread = 1)
 })
 
 system.time({
-  xgb_fit[["xgbLinear_lag5"]] <-  train(Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + DryBulb_lag3 + DryBulb_lag4 + DryBulb_lag5 + DryBulb_lag6 + DryBulb_lag24 + DryBulb_lag48 + DryBulb_lag72 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+  xgb_fit[["xgbLinear_lag5"]] <-  train(
+    Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + DryBulb_lag3 + 
+      DryBulb_lag4 + DryBulb_lag5 + DryBulb_lag6 + DryBulb_lag24 + 
+      DryBulb_lag48 + DryBulb_lag72 + Period,
+    data = train_data,
+    method="xgbLinear",
+    trControl = xgb_ctrl,
+    tuneGrid = xgb_grid_linear,
+    nthread = 1)
 })
 
 system.time({
-  xgb_fit[["xgbLinear_lag6"]] <-  train(Demand ~ DryBulb + DryBulb_lag24 + DryBulb_lag48 + DryBulb_lag72 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+  xgb_fit[["xgbLinear_lag6"]] <-  train(
+    Demand ~ DryBulb + DryBulb_lag24 + DryBulb_lag48 + DryBulb_lag72 + Period,
+    data = train_data,
+    method="xgbLinear",
+    trControl = xgb_ctrl,
+    tuneGrid = xgb_grid_linear,
+    nthread = 1)
 })
 
 system.time({
-  xgb_fit[["xgbLinear_lag7"]] <-  train(Demand ~ DryBulb + DryBulb_lag3 + DryBulb_lag6 + DryBulb_lag24 + DryBulb_lag48 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+  xgb_fit[["xgbLinear_lag7"]] <-  train(
+    Demand ~ DryBulb + DryBulb_lag3 + DryBulb_lag6 + DryBulb_lag24 + 
+      DryBulb_lag48 + Period,
+    data = train_data,
+    method="xgbLinear",
+    trControl = xgb_ctrl,
+    tuneGrid = xgb_grid_linear,
+    nthread = 1)
 })
 
 system.time({
-  xgb_fit[["xgbLinear_lag8"]] <-  train(Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + DryBulb_lag3 + DryBulb_lag4 + DryBulb_lag5 + DryBulb_lag6 + DryBulb_lag24 + DryBulb_lag48 + Period,
-                                   data = train_data,
-                                   method="xgbLinear",
-                                   trControl = xgb_ctrl,
-                                   tuneGrid = xgb_grid_linear,
-                                   nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+  xgb_fit[["xgbLinear_lag8"]] <-  train(
+    Demand ~ DryBulb + DryBulb_lag1 + DryBulb_lag2 + DryBulb_lag3 + 
+      DryBulb_lag4 + DryBulb_lag5 + DryBulb_lag6 + DryBulb_lag24 + 
+      DryBulb_lag48 + Period,
+    data = train_data,
+    method="xgbLinear",
+    trControl = xgb_ctrl,
+    tuneGrid = xgb_grid_linear,
+    nthread = 1)
 })
 ```
 
@@ -390,7 +403,7 @@ system.time({
           method="xgbLinear",
           trControl = xgb_ctrl,
           tuneGrid = xgb_grid_linear,
-          nthread = 1) # this arg stops OpenMP automatically running on linux, which stuffs up when also using doMC
+          nthread = 1)
 })
 ```
 
