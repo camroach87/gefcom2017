@@ -58,7 +58,7 @@ The parameters `delta1` and `delta2` set the amount of variation in the date cho
 
 **NOTE: Be careful when sampling at end of year. Make sure we move from one year to the next and don't accidentally sample from beginning => discontinuity!**
 
-```{r eval=FALSE}
+```{}
 GET days in season
 SET delta1, delta2
 SET number of simulated seasons
@@ -77,6 +77,10 @@ GET residual data for dates and times in bootstrapped date-time data
 ```
 
 
+
+
+
+
 # Weather bootstrapping
 
 Correlogram for dry bulb temperature and dew point temperature shown below. Serial correlations for 720 lags (30 days) have been calculated.
@@ -93,7 +97,7 @@ with(smd, acf(DewPnt, lag.max = 30*24))
 ```
 
 
- # Residual boostrapping
+ # Residual bootstrapping
  
  
  
