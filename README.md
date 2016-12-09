@@ -3,6 +3,8 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
 
 ## To do
 
+* Create dummy variables function. Needs to be separate from load data function as I also need to apply it to simulations after they have been created.
+* Maybe use the same input data for all models (zones and aggregated areas). Just use `spread` to spread all weather variables by zone. Then feed all of these hundreds of variables into each model for each zone and aggregated zone. See how well it works...
 * log(Demand): Fit models to log of demand to enforce positive constraint. Should improve accuracy.
 * Fit L1 and L2 regularization models to all zones. Also best performing manually specified model and baseline model. Compare CV performance and RMSE on test set performance across all zones.
 * Compare an L2 model using weather in all zones to a simple boosting model that just uses average of all zones weather info.
@@ -10,6 +12,7 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
 * Calc quantiles.
 * Calc pinball loss scores on test set.
 * Write function to output results to excel template.
+
 
 
 ## Questions
