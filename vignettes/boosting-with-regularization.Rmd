@@ -17,7 +17,7 @@ knitr::opts_chunk$set(
 	message = FALSE,
 	warning = FALSE,
 	cache = TRUE,
-	cache.path = "./../cache/"
+	cache.path = "./../cache/knitr/"
 )
 
 rm(list=ls())
