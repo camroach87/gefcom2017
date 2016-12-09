@@ -63,7 +63,7 @@ In addition to the xgboost models a simple linear regression model will be fitte
 
 ## Lagged variable creation
 
-```{r gen_dummy_vars}
+```{r gen_dummy_vars, echo=FALSE}
 iZ <- "VT"
 
 smd <- smd %>%

@@ -53,7 +53,7 @@ Electricity demand in the ME load zone will be used. Only working days will be c
 
 ## Lagged variable creation
 
-```{r gen_dummy_vars}
+```{r gen_dummy_vars, echo=FALSE}
 iZ <- "ME"
 
 smd <- smd %>%
