@@ -3,12 +3,14 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
 
 ## To do
 
+* log(Demand): Fit models to log of demand to enforce positive constraint. Should improve accuracy.
+* Fit L1 and L2 regularization models to all zones. Also best performing manually specified model and baseline model. Compare CV performance and RMSE on test set performance across all zones.
+* Compare an L2 model using weather in all zones to a simple boosting model that just uses average of all zones weather info.
 * Bootstrapping. Preserve correlations between zones etc.
 * Calc quantiles.
 * Calc pinball loss scores on test set.
 * Write function to output results to excel template.
-* log(Demand): Fit models to log of demand to enforce positive constraint. Should improve accuracy.
-* Investigate how L1 regularization affects accuracy. Train model with several values for `alpha` and plot performance.
+
 
 ## Questions
 
