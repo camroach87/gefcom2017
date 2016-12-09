@@ -77,6 +77,70 @@ GET residual data for dates and times in bootstrapped date-time data
 ```
 
 
+## R function
+
+```{r bootstrapping_function}
+#' Double seasonal block bootstrap
+#'
+#' Generates bootstrapped dates using a double seasonal block bootstrap approach.
+#'
+#' @param date_series array of dates.
+#' @param start_date start date for period we want bootstrap samples for.
+#' @param end_date end date for period we want bootstrap samples for.
+#' @param n_sim number of simulations. Defaults to 100 simulations.
+#' @param avg_block_len average length of blocks. Defaults to 14 days.
+#' @param delta_loc amount to randomise current location by when sampling blocks. See details.
+#' @param delta_len amount to randomise block length by. See details.
+#'
+#' delta_loc shifts the current location in the simulated year by a random amount before sampling from a random historical year.
+#'
+#' @return A data frame with two columns. One for simulation number and another for bootstrapped dates.
+#' @export
+#'
+#' @examples
+#'
+#' @author Cameron Roach
+dbl_block_bs <- function(dates, start_date = today(), end_date = today() + 30, 
+                         n_sim = 100, avg_block_len = 14, delta_loc = 0,
+                         delta_len = 0) {
+  
+  dates <- sort(as.Date(unique(dates)))
+  years <- unique(year(dates))
+  end_date <- as.Date(end_date)
+  start_date <- as.Date(start_date)
+  bs_length <- end_date - start_date
+  
+  if (bs_length > 365) stop("Start and end dates should not be more than a year apart.")
+  
+  bs_sim <- NULL
+  for (iSasdf in 1:n_sim) {
+    # initialise
+    bs_tmp <- NULL
+    loc_date <- start_date
+    while (loc_date < end_date) {
+      year_sample <- sample(years, 1)
+      block_loc <- loc_date + sample(-delta_loc:delta_loc, 1)
+      block_length <- avg_block_len + sample(-delta_len:delta_len, 1)
+      
+      # update block location with sampled year
+      year(block_loc) <- year_sample
+      
+      bs_dates <- block_loc + 0:(block_length - 1)
+      
+      # update
+      bs_tmp <- bind_rows(bs_tmp,
+                          data.frame(Simulation = iSasdf,
+                                     Date = bs_dates))
+      loc_date <- loc_date + block_length
+    }
+    
+    bs_tmp <- bs_tmp[1:bs_length,]
+    bs_sim <- bind_rows(bs_sim, bs_tmp)
+  }
+  
+  return(bs_sim)
+}
+```
 
 
 
