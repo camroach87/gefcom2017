@@ -101,7 +101,7 @@ We use a linearly boosted model for all zones with three days of hourly lagged v
 
 _Only doing 3-fold CV to speed things up. Have already done model validation in previous docs._
 
-```{r}
+```{r fit_zones}
 xgb_ctrl <- trainControl(method = "repeatedcv",
                          number = 3,
                          allowParallel = TRUE)
@@ -128,7 +128,31 @@ system.time({
             nthread = 1)
   }
 })
+
+save(xgb_fit, file = "./cache/xgb_fit_smd_load_forecasting.RData")
 ```
+
+
+```{r performance_zones}
+performance_df <- NULL
+for (iM in names(xgb_fit)) {
+  performance_df <- data.frame(
+    Model = iM,
+    RMSE = min(xgb_fit[[iM]]$results$RMSE)
+  ) %>% 
+    bind_rows(performance_df)
+}
+
+performance_df$Model <- factor(performance_df$Model,
+                               levels = names(xgb_fit),
+                               ordered = TRUE)
+
+ggplot(performance_df, aes(x=Model, y=RMSE)) +
+  geom_point() +
+  ggtitle("3-fold CV RMSE for load zones") +
+  coord_flip()
+```
+
 
 ### Aggregated zones
 
