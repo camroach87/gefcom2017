@@ -4,14 +4,16 @@
 #'
 #' @param load_zones Electricity load zones.
 #' @param root_dir Path to the root directory.
+#' @param ignore_cache logical. If TRUE, ignores any cached files and reloads data.
 #'
 #'
 #' @return smd data_frame containing raw data and calendar variables
 #' @export
 #'
 #' @author Cameron Roach
-load_smd_data <- function(load_zones, root_dir = ".") {
-  if (file.exists(file.path(root_dir, "cache/smd_data.Rdata"))) {
+load_smd_data <- function(load_zones, root_dir = ".", ignore_cache = FALSE) {
+  if (file.exists(file.path(root_dir, "cache/smd_data.Rdata")) &
+      !ignore_cache) {
     # load smd data frame from cached file
     load(file.path(root_dir, "cache/smd_data.Rdata"))
   } else {
