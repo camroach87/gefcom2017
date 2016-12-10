@@ -37,6 +37,18 @@ load_smd_data <- function(load_zones, root_dir = ".") {
       }
     }
 
+    # Add holidays
+    smd <- left_join(smd, holidays) %>%
+      mutate(Holiday = if_else(is.na(Holiday), "NH", Holiday),
+             Holiday_flag = if_else(Holiday == "NH", FALSE, TRUE))
+
+    # Get time stamps (don't put in get-dummy-vars because always needed)
+    smd <- smd %>%
+      mutate(Date = if_else(Hour == 24, Date + days(1), Date),
+             Hour = if_else(Hour == 24, 0, Hour),
+             ts = ymd_h(paste(Date, Hour)),
+             Period = factor(smd$Hour, levels = 1:24, ordered = FALSE))
+
     # cache smd data frame for speedy loading
     dir.create(file.path(root_dir, "cache"),
                showWarnings = FALSE)

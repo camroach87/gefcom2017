@@ -3,7 +3,7 @@
 #' Gets dummy variables for GEFCOM smd data. Dummy variables include calendar
 #' variables and lagged dry bulb and dew point temperature variables.
 #'
-#' @param x cleaned data frame. Should be the output from clean_smd_data() function.
+#' @param x cleaned data frame. Should be the output from \code{clean_smd_data()} function.
 #' @param calendar_vars logical. Indicates if calendar dummy variables should be returned.
 #' @param lags logical. Indicates if lagged variables should be returned.
 #'
@@ -22,20 +22,11 @@ get_dummy_vars <- function(x, calendar_vars = TRUE, lags = FALSE) {
   # Note that factors are not ordered as this can adversely impact model fitting time in caret.
   if (calendar_vars == TRUE) {
     x <- x %>%
-      mutate(Date = if_else(Hour == 24, Date + days(1), Date),
-             Period = factor(x$Hour, levels = 1:24, ordered = FALSE),
-             Hour = if_else(Hour == 24, 0, Hour),
-             ts = ymd_h(paste(Date, Hour)),
-             Year = year(ts),
+      mutate(Year = year(ts),
              Month = factor(month(ts, label = TRUE), ordered = FALSE),
              DoW = factor(wday(ts, label = TRUE), ordered = FALSE),
              DoY = yday(ts),
              Weekend = ifelse(DoW %in% c("Sat", "Sun"), TRUE, FALSE))
-
-    # Add holidays
-    x <- left_join(x, holidays) %>%
-      mutate(Holiday = if_else(is.na(Holiday), "NH", Holiday),
-             Holiday_flag = if_else(Holiday == "NH", FALSE, TRUE))
   }
 
   if (lags == TRUE) {
