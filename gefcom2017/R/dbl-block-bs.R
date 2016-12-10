@@ -1,18 +1,26 @@
 #' Double seasonal block bootstrap
 #'
-#' Generates bootstrapped dates using a double seasonal block bootstrap approach.
+#' Generates bootstrapped dates using a double seasonal block bootstrap
+#' approach.
+#'
+#' delta_loc controls how much the current location in the simulated year should
+#' be shifted by when sampling from historical data. The shifting amount is
+#' seleted from a discrete \eqn{Uniform(-delta_loc, delta_loc)} distribution.
+#' Similarly, delta_len controls how much the length of the bootstrap block
+#' should be. A smapled block will have length equal to \eqn{avg_block_len +
+#' Uniform(-delta_len, delta_len)}.
 #'
 #' @param date_series array of dates.
 #' @param start_date start date for period we want bootstrap samples for.
 #' @param end_date end date for period we want bootstrap samples for.
 #' @param n_sims number of simulations. Defaults to 100 simulations.
 #' @param avg_block_len average length of blocks. Defaults to 14 days.
-#' @param delta_loc amount to randomise current location by when sampling blocks. See details.
+#' @param delta_loc amount to randomise current location by when sampling
+#'   blocks. See details.
 #' @param delta_len amount to randomise block length by. See details.
 #'
-#' delta_loc shifts the current location in the simulated year by a random amount before sampling from a random historical year.
-#'
-#' @return A data frame with two columns. One for simulation number and another for bootstrapped dates.
+#' @return A data frame with two columns. One for simulation number and another
+#'   for bootstrapped dates.
 #' @export
 #'
 #' @author Cameron Roach
