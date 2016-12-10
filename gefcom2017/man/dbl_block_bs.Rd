@@ -16,19 +16,28 @@ dbl_block_bs(dates, start_date = today(), end_date = today() + 30,
 
 \item{avg_block_len}{average length of blocks. Defaults to 14 days.}
 
-\item{delta_loc}{amount to randomise current location by when sampling blocks. See details.}
+\item{delta_loc}{amount to randomise current location by when sampling
+blocks. See details.}
 
-\item{delta_len}{amount to randomise block length by. See details.
-
-delta_loc shifts the current location in the simulated year by a random amount before sampling from a random historical year.}
+\item{delta_len}{amount to randomise block length by. See details.}
 
 \item{date_series}{array of dates.}
 }
 \value{
-A data frame with two columns. One for simulation number and another for bootstrapped dates.
+A data frame with two columns. One for simulation number and another
+  for bootstrapped dates.
 }
 \description{
-Generates bootstrapped dates using a double seasonal block bootstrap approach.
+Generates bootstrapped dates using a double seasonal block bootstrap
+approach.
+}
+\details{
+delta_loc controls how much the current location in the simulated year should
+be shifted by when sampling from historical data. The shifting amount is
+seleted from a discrete \eqn{Uniform(-delta_loc, delta_loc)} distribution.
+Similarly, delta_len controls how much the length of the bootstrap block
+should be. A smapled block will have length equal to \eqn{avg_block_len +
+Uniform(-delta_len, delta_len)}.
 }
 \author{
 Cameron Roach
