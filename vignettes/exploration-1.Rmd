@@ -25,8 +25,7 @@ require(ggplot2)
 require(plotly)
 require(caret)
 require(myhelpr)
-
-source("../R/loadData.R")
+require(gefcom2017)
 
 load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
 load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)

@@ -30,11 +30,9 @@ require(DT)
 require(caret)
 require(myhelpr)
 require(doMC)
+require(gefcom2017)
 
 registerDoMC(cores = 3)
-
-source("../R/loadData.R")
-source("../R/clean-smd-data.R")
 
 load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
 load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
