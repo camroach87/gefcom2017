@@ -42,9 +42,9 @@ load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
 load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
 agg_zones <- c("MASS", "TOTAL")
 all_zones <- c(load_zones, agg_zones)
-n_sims <- 100
-fcst_start_date <- dmy("1/5/2016")
-fcst_end_date <- dmy("1/6/2016") - 1
+n_sims <- 1000
+fcst_start_date <- dmy("1/1/2017")
+fcst_end_date <- dmy("1/2/2017") - 1
 
 # Load data
 smd <- load_smd_data(load_zones, root_dir = ".")
