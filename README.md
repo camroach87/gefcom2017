@@ -3,6 +3,7 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
 
 ## To do
 
+* FIX: If 29th Feb included in forecast period then NAs get returned for residuals on 29th Feb. Would be nice to fix to make sure everything working as expected.
 * Monthly consumption forecasting. See doc.
 * When doing forecasts in March, what happens on DST day? Does forecast data frame return 23 or 24 values? What is the impact on the residual bootstrapping function which always expects 24 periods? TEST!
 * What happens when bootstrapping for those days missing an hour? Does that mean no value is produced for that hour?
