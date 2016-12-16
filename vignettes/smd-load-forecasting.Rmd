@@ -117,7 +117,7 @@ Additionally, several dummy variables have been calculated. These include,
 
 ~~Period of day should be used in place of Hour in modelling as it is a factor.~~ It appears as though boosting algorithm works fine with Hour (perhaps even better - TODO: check).
 
-Lagged demand predictors will not be used in the model. This is because demand is correlated with day of the week whereas weather conditions are not. Hence, when bootstrapping, the relationship between demand and day of the week will not be preserved due to bootstrap blocks being shifted from there original position.
+Lagged demand predictors will not be used in the model. This is because demand is correlated with day of the week whereas weather conditions are not. Hence, when bootstrapping, the relationship between demand and day of the week will not be preserved due to bootstrap blocks being shifted from their original position.
 
 ## Output
 
