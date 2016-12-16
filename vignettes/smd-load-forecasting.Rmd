@@ -117,11 +117,11 @@ Additionally, several dummy variables have been calculated. These include,
 
 ~~Period of day should be used in place of Hour in modelling as it is a factor.~~ It appears as though boosting algorithm works fine with Hour (perhaps even better - TODO: check).
 
-Lagged demand predictors will not be used in the model. This is because demand is correlated with day of the week whereas weather conditions are not. Hence, when bootstrapping, the relationship between demand and day of the week will not be preserved due to bootstrap blocks being shifted from there original position.
+Lagged demand predictors will not be used in the model. This is because demand is correlated with day of the week whereas weather conditions are not. Hence, when bootstrapping, the relationship between demand and day of the week will not be preserved due to bootstrap blocks being shifted from their original position.
 
 ## Output
 
-We wish to produce quantile forecasts (10, 20, ..., 90) for each day in a future month. These forecasts will be produced for each of the zones and also the two aggregated zones (Massachusetts and total of all).
+We wish to produce quantile forecasts (10, 20, ..., 90) for every hour in a given month in the future. These forecasts will be produced for each of the zones and also the two aggregated zones (Massachusetts and total of all).
 
 Since we are not provided forecast weather data for the month we will need to rely on a bootstrapping approach to create a distribution.
 
