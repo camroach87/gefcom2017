@@ -73,9 +73,9 @@ smd_total <- smd %>%
   ungroup() %>% 
   mutate(Zone = "TOTAL")
 
-smd <- filter(smd, Year >= 2011)
-smd_mass <- filter(smd_mass, Year >= 2011)
-smd_total <- filter(smd_total, Year >= 2011)
+# smd <- filter(smd, Year >= 2011)
+# smd_mass <- filter(smd_mass, Year >= 2011)
+# smd_total <- filter(smd_total, Year >= 2011)
 ```
 
 
@@ -150,6 +150,33 @@ smd_total %>%
 1. Instead of forecasting quantiles of demand, forecast quantiles of normalised demand.
 2. Using univariate time-series technique, forecast consumption for coming month.
 3. Scale quantiles by the forecast monthly consumption.
+
+```{r arima_forecast}
+require(forecast)
+require(ggplot2)
+require(scales)
+
+smd_total_avg <- smd_total %>%
+  mutate(MMYY = floor_date(ts, "month")) %>% 
+  group_by(MMYY) %>% 
+  summarise(Average_demand = mean(Demand))
+
+y <- ts(smd_total_avg$Average_demand, 
+        freq=12,
+        start=c(2003, 3))
+yt <- window(y,end=2015)
+#auto.arima(yt)
+yfit <- Arima(yt, order=c(1,0,0), seasonal=c(2,1,1), lambda=0)
+yfor <- forecast(yfit)
+#pd <- funggcast(y,yfor)
+
+autoplot(yfor)+ 
+  geom_line(data = data.frame(Date = time(y),
+                              Demand = as.numeric(y)),
+            aes(x=Date, y=Demand),
+            colour = "black")
+```
+
 
 
 # Background
