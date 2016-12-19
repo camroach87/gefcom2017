@@ -3,6 +3,7 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
 
 ## To do
 
+* PRIORITY: For total should be using column D of the "ISO NE CA" worksheet.
 * Increase the number of years of data in
     + Model training set.
     + Weather bootstrap set. Only last 6 years of weather used! Need more variety!
