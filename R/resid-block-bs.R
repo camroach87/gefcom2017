@@ -10,7 +10,7 @@
 #'
 #'
 #' @param x_resid data frame containing residuals.
-#' @param x_fcst data frame containing forecasts.
+#' @param x_fcst data frame containing forecasts and dates.
 #' @param block_length numeric. Length of bootstrap blocks.
 #'
 #' @return The forecast data frame with a new residuals column.
@@ -51,7 +51,7 @@ resid_block_bs <- function(x_resid, x_fcst, block_length = 4) {
   n_resid_blocks <-max(x_resid$Block)
 
   # Sample blocks from historical residual dataframe and fill in fcst_df residual column
-  fcst_n_days <- as.numeric(fcst_end_date - fcst_start_date)
+  fcst_n_days <- as.numeric(max(x_fcst$Date) - min(x_fcst$Date)) + 1
   fcst_n_blocks <- ceiling(fcst_n_days/block_length)
   x_fcst$Residual <- NA
   for (iB in 1:fcst_n_blocks) {

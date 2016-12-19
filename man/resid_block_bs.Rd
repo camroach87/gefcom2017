@@ -9,7 +9,7 @@ resid_block_bs(x_resid, x_fcst, block_length = 4)
 \arguments{
 \item{x_resid}{data frame containing residuals.}
 
-\item{x_fcst}{data frame containing forecasts.}
+\item{x_fcst}{data frame containing forecasts and dates.}
 
 \item{block_length}{numeric. Length of bootstrap blocks.}
 }
