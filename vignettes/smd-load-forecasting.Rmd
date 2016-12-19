@@ -43,8 +43,8 @@ load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
 agg_zones <- c("MASS", "TOTAL")
 all_zones <- c(load_zones, agg_zones)
 n_sims <- 1000
-fcst_start_date <- dmy("1/1/2017")
-fcst_end_date <- dmy("1/2/2017") - 1
+fcst_start_date <- dmy("1/2/2017")
+fcst_end_date <- dmy("1/3/2017") - 1
 
 # Load data
 smd <- load_smd_data(load_zones, root_dir = ".")
@@ -640,6 +640,6 @@ for (iS in sheet_order) {
 
 dir.create("./output", F, T)
 WriteXLS(excel_output,
-         ExcelFileName = "./output/D1-These boosts are made forecasting.xls")
+         ExcelFileName = "./output/D2-These boosts are made forecasting.xls")
 ```
 
