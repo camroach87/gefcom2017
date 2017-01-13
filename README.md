@@ -5,9 +5,10 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
 
 * PRIORITY: For total should be using column D of the "ISO NE CA" worksheet.
 * PRIORITY: Forgot to include Holiday_flag as a covariate!!! FIX!!!
-* Increase the number of years of data in
+* PRIORITY: Increase the number of years of data in
     + Model training set.
     + Weather bootstrap set. Only last 6 years of weather used! Need more variety!
+* When testing regularization in boosting, find an algorithmic approach for manual variable model. Maybe try AIC or CV based selection?
 * Monthly consumption forecasting. See doc. Seems to be clear trends for some months. Can use a univariate technique to forecast average hourly demand for each month. Then scale quantiles of normalised demand (demand = demand/avg hourly demand in month)
 * When doing forecasts in March, what happens on DST day? Does forecast data frame return 23 or 24 values? What is the impact on the residual bootstrapping function which always expects 24 periods? TEST!
 * What happens when bootstrapping for those days missing an hour? Does that mean no value is produced for that hour?
