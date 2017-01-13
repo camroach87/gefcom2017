@@ -4,6 +4,7 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
 ## To do
 
 * PRIORITY: For total should be using column D of the "ISO NE CA" worksheet.
+* PRIORITY: Forgot to include Holiday_flag as a covariate!!! FIX!!!
 * Increase the number of years of data in
     + Model training set.
     + Weather bootstrap set. Only last 6 years of weather used! Need more variety!
@@ -14,10 +15,13 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
     + Above point: Can't say the same for residuals though. Need to make sure all 24 periods are present for all blocks.
 * Maybe use the same input data for all models (zones and aggregated areas). Just use `spread` to spread all weather variables by zone. Then feed all of these hundreds of variables into each model for each zone and aggregated zone. See how well it works...
 * log(Demand): Fit models to log of demand to enforce positive constraint. Should improve accuracy.
-* Fit L1 and L2 regularization models to all zones. Also best performing manually specified model and baseline model. Compare CV performance and RMSE on test set performance across all zones.
 * Compare an L2 model using weather in all zones to a simple boosting model that just uses average of all zones weather info.
 * Calc pinball loss scores on test set.
 * Model training period
     + Maybe have 2 models. One for DST months and another for non-daylight savings times? When DST starts on March 8th, the time of the peak shifts back one period (from 19 to 20). So, basically, it looks like demand is behaving as before (peak still occurs at same non-DST time), but because we have shifted to DST it looks like the peak has been shifted back by an hour. This may be affecting the model fit.
     + Or maybe train a new model based of months surrounding forecast period - probably makes more sense than above point.
 
+## Questions
+
+* Am I using the correct CV approach? K-fold cross-validation.
+* Would combining a monthly forecast and normalised demand poe levels improve things?
