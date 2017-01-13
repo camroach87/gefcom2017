@@ -24,4 +24,14 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
 ## Questions
 
 * Am I using the correct CV approach? K-fold cross-validation.
-* Would combining a monthly forecast and normalised demand poe levels improve things?
+Yes ok. Bonsoo paper
+* Would combining a monthly forecast and normalised demand poe levels improve things? See monthly-consumption-forecasting doc.
+Subtract monthly average and then add back on using forecast. Normalisation will need to happen as well.
+Uncertainty - forecast hh model minus avg demand. Predict avg demand + uncertainty for avg demand x 1000.
+* L1 and L2 regularization with many lagged variables. Uncomfortable that this appears to work so well.
+
+* Is there a better way to code my residual bootstrap resampling?
+I'm not crazy - this seems reasonable
+* Regularization: Does scaling predictor variables matter that much?
+No prob
+* Response var: should I do a log transformation for positivity. Is that always best?
