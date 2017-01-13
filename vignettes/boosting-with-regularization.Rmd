@@ -110,7 +110,7 @@ if (file.exists("./cache/boosting_with_regularization_models.RData")) {
 
 # Boosting with L1-regularization
 
-We will use all predictors and test a numer of weights for L1 regularization. All predictors (temperatures and lagged temperatures) have been scaled except for period of day, which is treated as a categorical variable.
+We will use all predictors and test a numer of penalty weights for L1 regularization. ~~All predictors (temperatures and lagged temperatures) have been scaled except for period of day, which is treated as a categorical variable.~~ _No scaling is being done on predictors now._
 
 ```{r fit_boost_l1_reg}
 xgb_grid_linear <- expand.grid(nrounds = 300,
@@ -138,23 +138,10 @@ if (!file.exists("./cache/boosting_with_regularization_models.RData")) {
 }
 ```
 
-## L1-regularization results
-
-We see lowest RMSE's when `alpha` is set to 1000.
-
-```{r model_performance_l1}
-# xgb_l1_fit
-# 
-# ggplot(xgb_l1_fit) +
-#   scale_x_log10() +
-#   ggtitle("L1 model performance")
-```
-
-
 
 # Boosting with L2-regularization
 
-We will use all predictors and test a numer of weights for L2 regularization. All predictors (temperatures and lagged temperatures) have been scaled except for period of day, which is treated as a categorical variable.
+We will use all predictors and test a numer of penalty weights for L2 regularization. ~~All predictors (temperatures and lagged temperatures) have been scaled except for period of day, which is treated as a categorical variable.~~ _No scaling is being done on predictors now._
 
 ```{r fit_boost_l2_reg}
 xgb_grid_linear <- expand.grid(nrounds = 300,
@@ -184,17 +171,6 @@ if (!file.exists("./cache/boosting_with_regularization_models.RData")) {
 save(xgb_fit, file = "./cache/boosting_with_regularization_models.RData")
 ```
 
-## L2-regularization results
-
-We see lowest RMSE's when `lambda` is set to 100. It looks as though the L2-regularization produces significantly better results than L1. This is most likely due to the strong correlation in the predictor variables. L1 regularization will give quite different values to correlated variables, whereas L2 regularization gives similar values (see ISLR p. 261).
-
-```{r model_performance_l2}
-# xgb_l2_fit
-# 
-# ggplot(xgb_l2_fit) +
-#   scale_x_log10() +
-#   ggtitle("L2 model performance")
-```
 
 ## CV performance
 
@@ -229,7 +205,7 @@ ggplot() +
 
 # Test data results
 
-RMSE scores on the test data set for the three model types are calculated below. Strangely, we are seeing better performance on the test data set, which may mean something is wrong. There is a chance there is less noisy data in 2016 which could also explain things, but this needs to be confirmed.
+RMSE scores on the test data set for the three model types are calculated below. As expected we see worse performance for all models. The two regularization models outperform the manual variable selection model. Both L1 and L2 regularization appear to perform similarly.
 
 ```{r test_performance}
 test_results_df <- NULL
