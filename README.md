@@ -29,9 +29,10 @@ Yes ok. Bonsoo paper
 Subtract monthly average and then add back on using forecast. Normalisation will need to happen as well.
 Uncertainty - forecast hh model minus avg demand. Predict avg demand + uncertainty for avg demand x 1000.
 * L1 and L2 regularization with many lagged variables. Uncomfortable that this appears to work so well.
-
-* Is there a better way to code my residual bootstrap resampling?
-I'm not crazy - this seems reasonable
+I'm not crazy - this seems reasonable. Google lasso autogregression for examples of time-series autogregression.
 * Regularization: Does scaling predictor variables matter that much?
-No prob
+Not an issue.
 * Response var: should I do a log transformation for positivity. Is that always best?
+Not always best - upper quantiles can stretch out too much. Huge tails in the distribution.
+Yeo-Johnson family of distributions to keep things positive.
+
