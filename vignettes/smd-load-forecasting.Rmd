@@ -3,6 +3,8 @@ title: "GEFCom 2017 demand forecasting"
 author: "Cameron Roach"
 output:
   pdf_document:
+    includes:
+      in_header: mystyles.sty
     toc: yes
   html_notebook:
     number_sections: yes
@@ -540,18 +542,118 @@ fcst_bs_df %>%
 
 
 
-# Base forecast reconciliation
+# Hierarchical forecast reconciliation
 
-R's `hts` package can be used to reconcile the means of heirarchical forecasts. Since we are forecasting the conditional mean on the bootstrap samples we can use `hts` to reconcile the aggregated means and zone means. Empirical quantiles may then be calculated from these reconciled forecasts for each zone and aggregated zone.
+Since we are dealing with hierarchical forecasts we need to reconcile the bottom level and aggregated time-series. Empirical quantiles may then be calculated from these reconciled forecasts for each zone and aggregated zone.
 
-**TODO**
+We are dealing with the hierarchical structure as shown below.
+
+$$
+\begin{tikzpicture}[sibling distance=6em,
+  font=\sffamily\small,
+  every node/.style = {shape=rectangle,
+    draw, align=center,
+    top color=white, bottom color=blue!20}]
+  \node {TOTAL}
+    child { node {ME} }
+    child { node {NH} }
+    child { node {VT} }
+    child { node {CT} }
+    child { node {RI} }
+    child { node {MASS} 
+      child { node {SEMASS} }
+      child { node {WCMASS} }
+      child { node {NEMASSBOST} } };
+\end{tikzpicture}
+$$
+
+Which can be represented in matrix notation using the summing matrix $S$,
+
+$$
+\begin{bmatrix}
+  y_{TOTAL,t} \\
+  y_{ME,t} \\
+  y_{NH,t} \\
+  y_{VT,t} \\
+  y_{CT,t} \\
+  y_{RI,t} \\
+  y_{MASS,t} \\
+  y_{SEMASS,t} \\
+  y_{WCMASS,t} \\
+  y_{NEMASSBOST,t} \\
+\end{bmatrix} =
+  \begin{bmatrix}
+    1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\
+    1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 1 & 0 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 1 & 0 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 1 & 0 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 1 & 1 & 1 \\
+    0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 \\
+    0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\
+  \end{bmatrix}
+  \begin{bmatrix}
+    y_{ME,t} \\
+    y_{NH,t} \\
+    y_{VT,t} \\
+    y_{CT,t} \\
+    y_{RI,t} \\
+    y_{SEMASS,t} \\
+    y_{WCMASS,t} \\
+    y_{NEMASSBOST,t} \\
+  \end{bmatrix} \\
+\mathbf{y}_t = \mathbf{S}\mathbf{y}_{8,t}
+$$
+
+For optimal forecast reconciliation the adjust forecasts $\tilde{\mathbf{y}}$ at forecast time $t$ can be calculated with,
+
+$$
+\tilde{\mathbf{y}}_t = \mathbf{S}(\mathbf{SS})^{-1}\mathbf{S}\hat{\mathbf{y}}_t
+$$
+where $\hat{\mathbf{y}}_t$ are the original forecasts for each zone at time $t$.
+
+Here's the code.
+
+```{r hierarchical_reconciliation}
+S <- matrix(ncol = 8, nrow = 10, byrow = TRUE,
+            c(1,1,1,1,1,1,1,1,
+              1,0,0,0,0,0,0,0,
+              0,1,0,0,0,0,0,0,
+              0,0,1,0,0,0,0,0,
+              0,0,0,1,0,0,0,0,
+              0,0,0,0,1,0,0,0,
+              0,0,0,0,0,1,1,1,
+              0,0,0,0,0,1,0,0,
+              0,0,0,0,0,0,1,0,
+              0,0,0,0,0,0,0,1))
+
+h_adj <- function(x, S) {
+  S %*% solve(t(S) %*% S) %*% t(S) %*% x
+}
+
+hts_raw <- fcst_bs_df %>% 
+  select(Simulation, Zone, ts, Date, Hour, Prediction_adj) %>% 
+  spread(Zone, Prediction_adj) %>% 
+  select(Simulation, ts, Date, Hour, TOTAL, ME, NH, VT, CT, RI, MASS,
+         SEMASS, WCMASS, NEMASSBOST)
+
+hts_adj <- t(apply(as.matrix(hts_raw[,-c(1:4)]), 1, h_adj, S))
+colnames(hts_adj) <- c("TOTAL", "ME", "NH", "VT", "CT", "RI", "MASS",
+                       "SEMASS", "WCMASS", "NEMASSBOST")
+
+# convert back to a dataframe
+hts_adj <- bind_cols(hts_raw[,c(1:4)], hts_adj)
+```
+
 
 # Quantile calculations
 
 Quantiles may be calculated for each hour of each day by simply calculating the empirical quantiles of the bootstrapped demand traces. R's `quantile` function is all that is needed for this.
 
 ```{r calc_quantiles}
-quantile_fcst <- fcst_bs_df %>% 
+quantile_fcst <- hts_adj %>% 
   group_by(Zone, ts, Date, Hour) %>% 
   summarise(Q10 = quantile(Prediction_adj, 0.1),
             Q20 = quantile(Prediction_adj, 0.2),
