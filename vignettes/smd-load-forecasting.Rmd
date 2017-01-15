@@ -201,8 +201,8 @@ xgb_grid_linear <- expand.grid(nrounds = 300,
                                lambda = c(0, exp(0:4)),
                                eta = 0.1)
 
-if (file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
-  load("./cache/xgb_fit_smd_load_forecasting.RData")
+if (file.exists("./cache/smd_load_forecasting.RData")) {
+  load("./cache/smd_load_forecasting.RData")
 } else {
   xgb_fit <- NULL
   system.time({
@@ -231,7 +231,7 @@ if (file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
 Two aggregated zones need to be forecast. One for the three zones comprising Massachusetts and another for the sum of all eight zones.
 
 ```{r fit_agg_zones}
-if (!file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
+if (!file.exists("./cache/smd_load_forecasting.RData")) {
   system.time({
     cat("Fitting model for zone MASS...\n")
     xgb_fit[["MASS"]] <- smd_mass %>% 
@@ -260,7 +260,7 @@ if (!file.exists("./cache/xgb_fit_smd_load_forecasting.RData")) {
             nthread = 1)
   })
   
-  save(xgb_fit, file = "./cache/xgb_fit_smd_load_forecasting.RData")
+  save(xgb_fit, file = "./cache/smd_load_forecasting.RData")
 }
 ```
 
