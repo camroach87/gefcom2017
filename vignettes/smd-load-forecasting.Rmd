@@ -212,8 +212,6 @@ if (file.exists("./cache/smd_load_forecasting.RData")) {
         filter(Zone == iZ) %>% 
         select(Demand, Hour, DoY, DoW, Holiday_flag,
                starts_with("DryBulb"), starts_with("DewPnt")) %>%
-        #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-        #          scale, center = FALSE) %>% 
         train(Demand ~ . ,
               data = .,
               method="xgbLinear",
@@ -237,8 +235,6 @@ if (!file.exists("./cache/smd_load_forecasting.RData")) {
     xgb_fit[["MASS"]] <- smd_mass %>% 
       select(Demand, Hour, DoY, DoW, Holiday_flag, 
              starts_with("DryBulb"), starts_with("DewPnt")) %>%
-      #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-      #          scale, center = FALSE) %>% 
       train(Demand ~ . ,
             data = .,
             method="xgbLinear",
@@ -250,8 +246,6 @@ if (!file.exists("./cache/smd_load_forecasting.RData")) {
     xgb_fit[["TOTAL"]] <- smd_total %>% 
       select(Demand, Hour, DoY, DoW, Holiday_flag, 
              starts_with("DryBulb"), starts_with("DewPnt")) %>%
-      #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-      #          scale, center = FALSE) %>% 
       train(Demand ~ . ,
             data = .,
             method="xgbLinear",
@@ -300,11 +294,8 @@ resid_df_vars <- c("ts", "Date", "DoY", "DoW", "Year", "Hour", "Period",
 # none of this code is nice :(
 resid_df <- NULL
 for (iZ in load_zones) {
-  # remember to scale predictor data again!
   resid_df <- smd %>% 
     filter(Zone == iZ) %>% 
-    #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-    #          scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[[iZ]], .)) %>% 
     select(one_of(resid_df_vars)) %>% 
@@ -313,21 +304,17 @@ for (iZ in load_zones) {
 
 # MASS predictions
 resid_df <- smd_mass %>% 
-  #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-  #            scale, center = FALSE) %>% 
-    data.frame(.,
-               Prediction = predict(xgb_fit[["MASS"]], .)) %>% 
-    select(one_of(resid_df_vars)) %>% 
-    bind_rows(resid_df)
+  data.frame(.,
+             Prediction = predict(xgb_fit[["MASS"]], .)) %>% 
+  select(one_of(resid_df_vars)) %>% 
+  bind_rows(resid_df)
 
 # TOTAL predictions
 resid_df <- smd_total %>% 
-  #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-  #            scale, center = FALSE) %>% 
-    data.frame(.,
-               Prediction = predict(xgb_fit[["TOTAL"]], .)) %>% 
-    select(one_of(resid_df_vars)) %>% 
-    bind_rows(resid_df)
+  data.frame(.,
+             Prediction = predict(xgb_fit[["TOTAL"]], .)) %>% 
+  select(one_of(resid_df_vars)) %>% 
+  bind_rows(resid_df)
 
 
 resid_df <- resid_df %>%
@@ -455,8 +442,6 @@ for (iZ in load_zones) {
   # remember to scale predictor data again!
   fcst_bs_df <- weather_bs %>% 
     filter(Zone == iZ) %>% 
-    #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-    #          scale, center = FALSE) %>% 
     data.frame(.,
                Prediction = predict(xgb_fit[[iZ]], .)) %>% 
     select(one_of(fcst_bs_df_vars)) %>% 
@@ -465,21 +450,17 @@ for (iZ in load_zones) {
 
 # MASS predictions
 fcst_bs_df <- weather_bs_mass %>% 
-  #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-  #            scale, center = FALSE) %>% 
-    data.frame(.,
-               Prediction = predict(xgb_fit[["MASS"]], .)) %>% 
-    select(one_of(fcst_bs_df_vars)) %>% 
-    bind_rows(fcst_bs_df)
+  data.frame(.,
+             Prediction = predict(xgb_fit[["MASS"]], .)) %>% 
+  select(one_of(fcst_bs_df_vars)) %>% 
+  bind_rows(fcst_bs_df)
 
 # TOTAL predictions
 fcst_bs_df <- weather_bs_total %>% 
-  #mutate_at(vars(starts_with("DryBulb"), starts_with("DewPnt")),
-  #            scale, center = FALSE) %>% 
-    data.frame(.,
-               Prediction = predict(xgb_fit[["TOTAL"]], .)) %>% 
-    select(one_of(fcst_bs_df_vars)) %>% 
-    bind_rows(fcst_bs_df)
+  data.frame(.,
+             Prediction = predict(xgb_fit[["TOTAL"]], .)) %>% 
+  select(one_of(fcst_bs_df_vars)) %>% 
+  bind_rows(fcst_bs_df)
 ```
 
 
