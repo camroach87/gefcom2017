@@ -1,0 +1,73 @@
+---
+title: "Optimal weighted hierarchical reconciliation"
+author: "Cameron Roach"
+date: "19 January 2017"
+output: pdf_document
+---
+
+```{r}
+#### Comparing unbalanced hierarchy with fake balanced hierarchy
+
+S1 <- matrix(ncol = 3,
+            nrow = 5,
+            byrow = TRUE,
+            c(1, 1, 1,
+              1, 0, 0,
+              0, 1, 1,
+              0, 1, 0,
+              0, 0, 1))
+
+S2 <- matrix(ncol = 3,
+            nrow = 6,
+            byrow = TRUE,
+            c(1, 1, 1,
+              1, 0, 0,
+              1, 0, 0,
+              0, 1, 1,
+              0, 1, 0,
+              0, 0, 1))
+
+y1_hat <- c(20, 3, 12, 6, 7)
+y2_hat <- c(20, 3, 3, 12, 6, 7)
+
+S1 %*% solve(t(S1) %*% S1) %*% t(S1) %*% y1_hat
+S2 %*% solve(t(S2) %*% S2) %*% t(S2) %*% y2_hat
+
+# Still get A node shifting way more than other low level nodes. Need to weight
+# the changes!
+
+S <- matrix(ncol = 2,
+            nrow = 3,
+            byrow = TRUE,
+            c(1, 1,
+              1, 0,
+              0, 1))
+y_hat <- c(10, 1, 6)
+S %*% solve(t(S) %*% S) %*% t(S) %*% y_hat
+
+# Even though A node is much smaller than B node, they are both shifted by 1.
+# This DOUBLES the initial estimate of y_A!!!!
+
+# Try above but with simple weighting
+ym_Total <- 11
+ym_A <- 0.6
+ym_B <- 6.2
+mean_sum <- ym_A + ym_B + ym_Total
+
+z <- y_hat[1] - sum(y_hat[2:3])
+
+delta <- c(- z * ym_Total / mean_sum,
+           z * ym_A / mean_sum,
+           z * ym_B / mean_sum)
+
+y_hat + delta
+
+## Weighted linear algebra attempt
+W <- diag(mean_sum / c(ym_Total, ym_A, ym_B))
+S %*% solve(t(S) %*% S) %*% t(S) %*% y_hat
+S %*% solve(t(S) %*% W %*% S) %*% t(S) %*% W %*% y_hat
+```
+
+Next can test this on a more complicated unbalanced hierarchy.
+
+**TODO**
