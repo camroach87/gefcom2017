@@ -183,7 +183,7 @@ This project will be broken into several parts.
 
 1. Fit a model using 2011-2016 data. This data contains public holiday information. Test several models using time-series cross-validation.
 2. Bootstrap weather data (all data 2003-2016). Check for any trends - unlikely over that period. Feed bootstrapped data into model to produce demand traces.
-3. Reconcile aggregated and zonal demand forecasts (for each bootstrap sample) using `hts` package.
+3. Reconcile aggregated and zonal demand forecasts (for each bootstrap sample).
 4. Select peak daily demand and add bootstrapped residuals.
 5. Calculate quantiles for each day in month of interest based on bootstrapped results.
 
@@ -610,7 +610,7 @@ $$
 For optimal forecast reconciliation the adjust forecasts $\tilde{\mathbf{y}}$ at forecast time $t$ can be calculated with,
 
 $$
-\tilde{\mathbf{y}}_t = \mathbf{S}(\mathbf{SS})^{-1}\mathbf{S}\hat{\mathbf{y}}_t
+\tilde{\mathbf{y}}_t = \mathbf{S}(\mathbf{S'S})^{-1}\mathbf{S'}\hat{\mathbf{y}}_t
 $$
 where $\hat{\mathbf{y}}_t$ are the original forecasts for each zone at time $t$.
 
@@ -629,7 +629,7 @@ S <- matrix(ncol = 8, nrow = 10, byrow = TRUE,
               0,0,0,0,0,0,1,0,
               0,0,0,0,0,0,0,1))
 
-h_adj <- function(x, S) {
+h_rec <- function(x, S) {
   S %*% solve(t(S) %*% S) %*% t(S) %*% x
 }
 
@@ -639,13 +639,52 @@ hts_raw <- fcst_bs_df %>%
   select(Simulation, ts, Date, Hour, TOTAL, ME, NH, VT, CT, RI, MASS,
          SEMASS, WCMASS, NEMASSBOST)
 
-hts_adj <- t(apply(as.matrix(hts_raw[,-c(1:4)]), 1, h_adj, S))
-colnames(hts_adj) <- c("TOTAL", "ME", "NH", "VT", "CT", "RI", "MASS",
-                       "SEMASS", "WCMASS", "NEMASSBOST")
+cat("HTS reconciliation flag set to:", hts_recon_flag, "...\n")
 
-# convert back to a dataframe
-hts_adj <- bind_cols(hts_raw[,c(1:4)], hts_adj)
+if (hts_recon_flag == TRUE) {
+  hts_rec <- t(apply(as.matrix(hts_raw[,-c(1:4)]), 1, h_rec, S))
+  colnames(hts_rec) <- c("TOTAL", "ME", "NH", "VT", "CT", "RI", "MASS",
+                         "SEMASS", "WCMASS", "NEMASSBOST")
+  
+  # convert back to a dataframe and correct structure
+  hts_rec <- bind_cols(hts_raw[,c(1:4)], as.data.frame(hts_rec)) %>% 
+    gather(Zone, Prediction_rec, -c(Simulation, ts, Date, Hour))
+  hts_raw <- hts_raw %>% 
+    gather(Zone, Prediction_adj, -c(Simulation, ts, Date, Hour))
+} else {
+  # no adjustment - just set reconciled data frame to raw
+  hts_raw <- hts_raw %>% 
+    gather(Zone, Prediction_adj, -c(Simulation, ts, Date, Hour))
+  hts_rec <- hts_raw %>% 
+    mutate(Prediction_rec = Prediction_adj)
+}
 ```
+
+We can see a comparison of the reconciled and unreconciled forecasts in the plot below. The first day in the forecast horizon is shown.
+
+```{r reconciliation_plot}
+p_date <- unique(hts_raw$Date)[1:3]
+ggplot() +
+  geom_line(data = hts_raw %>% 
+              filter(Simulation == p_sim,
+                     Date %in% p_date) %>% 
+              mutate(Zone = factor(Zone, levels = all_zones, ordered = TRUE)),
+            aes(x = ts, y = Prediction_adj, colour = "Unreconciled")) +
+  geom_line(data = hts_rec %>% 
+              filter(Simulation == p_sim,
+                     Date %in% p_date) %>% 
+              mutate(Zone = factor(Zone, levels = all_zones, ordered = TRUE)),
+            aes(x = ts, y = Prediction_rec, colour = "Reconciled")) +
+  facet_wrap(~Zone, scales = "free") +
+  ylab("Demand") +
+  scale_colour_manual(name = NULL,
+                      values = c(#"Actual" = "red",
+                                 "Reconciled" = "black",
+                                 "Unreconciled" = "darkgrey")) +
+  ggtitle("Hierarchical forecast reconcilation",
+          "Optimal combination approach")
+```
+
 
 
 # Quantile calculations
@@ -653,17 +692,17 @@ hts_adj <- bind_cols(hts_raw[,c(1:4)], hts_adj)
 Quantiles may be calculated for each hour of each day by simply calculating the empirical quantiles of the bootstrapped demand traces. R's `quantile` function is all that is needed for this.
 
 ```{r calc_quantiles}
-quantile_fcst <- hts_adj %>% 
+quantile_fcst <- hts_rec %>% 
   group_by(Zone, ts, Date, Hour) %>% 
-  summarise(Q10 = quantile(Prediction_adj, 0.1),
-            Q20 = quantile(Prediction_adj, 0.2),
-            Q30 = quantile(Prediction_adj, 0.3),
-            Q40 = quantile(Prediction_adj, 0.4),
-            Q50 = quantile(Prediction_adj, 0.5),
-            Q60 = quantile(Prediction_adj, 0.6),
-            Q70 = quantile(Prediction_adj, 0.7),
-            Q80 = quantile(Prediction_adj, 0.8),
-            Q90 = quantile(Prediction_adj, 0.9)) %>% 
+  summarise(Q10 = quantile(Prediction_rec, 0.1),
+            Q20 = quantile(Prediction_rec, 0.2),
+            Q30 = quantile(Prediction_rec, 0.3),
+            Q40 = quantile(Prediction_rec, 0.4),
+            Q50 = quantile(Prediction_rec, 0.5),
+            Q60 = quantile(Prediction_rec, 0.6),
+            Q70 = quantile(Prediction_rec, 0.7),
+            Q80 = quantile(Prediction_rec, 0.8),
+            Q90 = quantile(Prediction_rec, 0.9)) %>% 
   ungroup()
 ```
 
@@ -726,6 +765,6 @@ for (iS in sheet_order) {
 
 dir.create("./output", F, T)
 WriteXLS(excel_output,
-         ExcelFileName = "./output/D2-These boosts are made forecasting.xls")
+         ExcelFileName = "./output/D3-These boosts are made forecasting.xls")
 ```
 
