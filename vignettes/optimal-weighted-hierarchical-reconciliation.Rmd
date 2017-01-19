@@ -70,4 +70,21 @@ S %*% solve(t(S) %*% W %*% S) %*% t(S) %*% W %*% y_hat
 
 Next can test this on a more complicated unbalanced hierarchy.
 
-**TODO**
+```{r}
+S <- matrix(ncol = 3,
+            nrow = 5,
+            byrow = TRUE,
+            c(1, 1, 1,
+              1, 0, 0,
+              0, 1, 1,
+              0, 1, 0,
+              0, 0, 1))
+
+y_hat <- c(10, 1, 6, 3, 4)
+y_mean <- c(10, 1, 6, 3, 4)
+W <- diag(sum(y_mean) / y_mean)
+
+S %*% solve(t(S) %*% S) %*% t(S) %*% y_hat
+S %*% solve(t(S) %*% W %*% S) %*% t(S) %*% W %*% y_hat
+```
+
