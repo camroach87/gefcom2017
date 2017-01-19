@@ -1,13 +1,11 @@
 # gefcom-2017-d
 GEFCom2017-D modelling and forecasts. D stands for defined-data track.
 
+
 ## To do
 
-* PRIORITY: For total should be using column D of the "ISO NE CA" worksheet.
-* PRIORITY: Forgot to include Holiday_flag as a covariate!!! FIX!!!
-* PRIORITY: Increase the number of years of data in
-    + Model training set.
-    + Weather bootstrap set. Only last 6 years of weather used! Need more variety!
+* Reconcile heirarchical forecasts using magic linear algebra stuff. Figure out a good way that doesn't result in non-mass zones being shifted more than mass.
+* ~~PRIORITY: For total should be using column D of the "ISO NE CA" worksheet.~~ Only a tiny difference. Not worrying about this.
 * When testing regularization in boosting, find an algorithmic approach for manual variable model. Maybe try AIC or CV based selection?
 * Monthly consumption forecasting. See doc. Seems to be clear trends for some months. Can use a univariate technique to forecast average hourly demand for each month. Then scale quantiles of normalised demand (demand = demand/avg hourly demand in month)
 * When doing forecasts in March, what happens on DST day? Does forecast data frame return 23 or 24 values? What is the impact on the residual bootstrapping function which always expects 24 periods? TEST!
@@ -15,7 +13,6 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
     +Maybe should filter out those days from the bootstrapping process? Actually no - it just means there will be a few less values when calculating the quantiles for that hour and day (or days that use DST days in their bootstrapped samples). ACTUALLY what if data is getting out of sync with time? If
     + Above point: Can't say the same for residuals though. Need to make sure all 24 periods are present for all blocks.
 * Maybe use the same input data for all models (zones and aggregated areas). Just use `spread` to spread all weather variables by zone. Then feed all of these hundreds of variables into each model for each zone and aggregated zone. See how well it works...
-* log(Demand): Fit models to log of demand to enforce positive constraint. Should improve accuracy.
 * Compare an L2 model using weather in all zones to a simple boosting model that just uses average of all zones weather info.
 * Calc pinball loss scores on test set.
 * Model training period
@@ -23,17 +20,18 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
     + Or maybe train a new model based of months surrounding forecast period - probably makes more sense than above point.
 
 ## Questions
-
+* Do I need holiday variables when I have day of year variables?
+    + Probably. If holidays don't always fall on same day of year.
 * Am I using the correct CV approach? K-fold cross-validation.
-Yes ok. Bonsoo paper
+    + Yes ok. Bonsoo paper
 * Would combining a monthly forecast and normalised demand poe levels improve things? See monthly-consumption-forecasting doc.
-Subtract monthly average and then add back on using forecast. Normalisation will need to happen as well.
-Uncertainty - forecast hh model minus avg demand. Predict avg demand + uncertainty for avg demand x 1000.
+    + Subtract monthly average and then add back on using forecast.       + Normalisation will need to happen as well.
+    + Uncertainty - forecast hh model minus avg demand. Predict avg demand + uncertainty for avg demand x 1000.
 * L1 and L2 regularization with many lagged variables. Uncomfortable that this appears to work so well.
-I'm not crazy - this seems reasonable. Google lasso autogregression for examples of time-series autogregression.
+    + I'm not crazy - this seems reasonable. Google lasso autogregression for examples of time-series autogregression.
 * Regularization: Does scaling predictor variables matter that much?
-Not an issue.
+    + Not an issue.
 * Response var: should I do a log transformation for positivity. Is that always best?
-Not always best - upper quantiles can stretch out too much. Huge tails in the distribution.
-Yeo-Johnson family of distributions to keep things positive.
+    + Not always best - upper quantiles can stretch out too much. Huge tails in the distribution.
+    +Yeo-Johnson family of distributions to keep things positive.
 
