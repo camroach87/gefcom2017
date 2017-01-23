@@ -1,7 +1,7 @@
 ---
 title: "Optimal weighted hierarchical reconciliation"
 author: "Cameron Roach"
-date: "19 January 2017"
+date: "23 January 2017"
 output:
   pdf_document:
     includes:
@@ -17,13 +17,12 @@ output:
 
 ```{r setup, include=FALSE, echo=FALSE}
 knitr::opts_chunk$set(
-	echo = TRUE,
+	echo = FALSE,
 	message = FALSE,
 	warning = FALSE,
 	dev = "png",
 	dpi = 150
 )
-
 rm(list=ls())
 
 require(dplyr)
@@ -39,6 +38,7 @@ require(doMC)
 require(gefcom2017)
 require(WriteXLS)
 require(ModelMetrics)
+require(knitr)
 
 registerDoMC(cores = 11)
 
@@ -95,109 +95,20 @@ smd_total <- smd_total %>%
   filter(Year >= 2009)
 ```
 
+# Introduction
 
-
-
-# Rough sketch
-
-```{r}
-#### Comparing unbalanced hierarchy with fake balanced hierarchy
-
-S1 <- matrix(ncol = 3,
-            nrow = 5,
-            byrow = TRUE,
-            c(1, 1, 1,
-              1, 0, 0,
-              0, 1, 1,
-              0, 1, 0,
-              0, 0, 1))
-
-S2 <- matrix(ncol = 3,
-            nrow = 6,
-            byrow = TRUE,
-            c(1, 1, 1,
-              1, 0, 0,
-              1, 0, 0,
-              0, 1, 1,
-              0, 1, 0,
-              0, 0, 1))
-
-y1_hat <- c(20, 3, 12, 6, 7)
-y2_hat <- c(20, 3, 3, 12, 6, 7)
-
-S1 %*% solve(t(S1) %*% S1) %*% t(S1) %*% y1_hat
-S2 %*% solve(t(S2) %*% S2) %*% t(S2) %*% y2_hat
-
-# Still get A node shifting way more than other low level nodes. Need to weight
-# the changes!
-
-S <- matrix(ncol = 2,
-            nrow = 3,
-            byrow = TRUE,
-            c(1, 1,
-              1, 0,
-              0, 1))
-y_hat <- c(10, 1, 6)
-S %*% solve(t(S) %*% S) %*% t(S) %*% y_hat
-
-# Even though A node is much smaller than B node, they are both shifted by 1.
-# This DOUBLES the initial estimate of y_A!!!!
-
-# Try above but with simple weighting
-ym_Total <- 11
-ym_A <- 0.6
-ym_B <- 6.2
-mean_sum <- ym_A + ym_B + ym_Total
-
-z <- y_hat[1] - sum(y_hat[2:3])
-
-delta <- c(- z * ym_Total / mean_sum,
-           z * ym_A / mean_sum,
-           z * ym_B / mean_sum)
-
-y_hat + delta
-
-## Weighted linear algebra attempt
-W <- diag(mean_sum / c(ym_Total, ym_A, ym_B))
-S %*% solve(t(S) %*% S) %*% t(S) %*% y_hat
-S %*% solve(t(S) %*% W %*% S) %*% t(S) %*% W %*% y_hat
-```
-
-Next can test this on a more complicated unbalanced hierarchy.
-
-```{r}
-S <- matrix(ncol = 3,
-            nrow = 5,
-            byrow = TRUE,
-            c(1, 1, 1,
-              1, 0, 0,
-              0, 1, 1,
-              0, 1, 0,
-              0, 0, 1))
-
-y_hat <- c(10, 1, 6, 3, 4)
-y_mean <- c(10, 1, 6, 3, 4)
-W <- diag(sum(y_mean) / y_mean)
-
-S %*% solve(t(S) %*% S) %*% t(S) %*% y_hat
-S %*% solve(t(S) %*% W %*% S) %*% t(S) %*% W %*% y_hat
-```
+Our objective is to reconcile hierarchical forecasts for the GEFCOM 2017 competition. The hierarchy is unbalanced with two levels. Forecasts have been produced using the L1-penalised linear boosting models. Forecasts have been created using the traing data. We do not concern ourselves with fitting the models to an out-of-sample test set as we are only interested in how well the reconciliation methods work.
 
 # GEFCom 2017 data
 
 ## Load models and fit
 
-Load fitted models from `smd-load-forecasting.Rmd`.
+First, load models from `smd-load-forecasting.Rmd`.
 
 ```{r load_models}
 load("./cache/smd_load_forecasting.RData")
 ```
 
-Predict on training set. **Should do on an out-of-sample test data set.**
-
-```{r predict_on_training_set}
-
-```
 
 ## Hierarchical reconciliation
 
@@ -208,8 +119,7 @@ We are dealing with the hierarchy shown in figure \ref{fig:hierarchy}.
 \begin{tikzpicture}[sibling distance=6em,
   font=\sffamily\small,
   every node/.style = {shape=rectangle,
-    draw, align=center,
-    top color=white, bottom color=blue!20}]
+    draw, align=center}]
   \node {TOTAL}
     child { node {ME} }
     child { node {NH} }
@@ -266,7 +176,7 @@ $$
 \mathbf{y}_t = \mathbf{S}\mathbf{y}_{8,t}
 $$
 
-Adjusted forecasts $\tilde{\mathbf{y}}$ at forecast time $t$ can be calculated using optimal forecast reconciliation,
+Adjusted forecasts $\tilde{\mathbf{y}}_t$ can be calculated using optimal forecast reconciliation,
 
 $$
 \tilde{\mathbf{y}}_t = \mathbf{S}(\mathbf{S'S})^{-1}\mathbf{S'}\hat{\mathbf{y}}_t
@@ -298,7 +208,11 @@ $$
 \end{bmatrix},
 $$
 
-where $\bar{y}_n$ is the average demand for node $n$.
+and $\bar{y}_n$ is the average demand for node $n$.
+
+## Fit values
+
+Demand predictions are now calculated for every zone over the entire duration of the training set. This gives 8 child node time-series and 2 aggregated nodes. Each time-series starts in 2009 and ends 2016.
 
 ```{r predict_values}
 fcst_df_vars <- c("ts", "Date", "Hour", "DoY", "DoW", "Year", "Month", 
@@ -330,8 +244,11 @@ fcst_df <- smd_total %>%
   bind_rows(fcst_df)
 ```
 
+_Note: This is now different to what happens in the simulation. In the simulation we also add on residuals and THEN reconcile. Here we are only doing predictions and then reconciling. Keep that in mind when discussing because they are two very different things and both deserve attention._
 
-This is now different to what happens in the simulation. In the simulation we also add on residuals and THEN reconcile. Here we are only doing predictions and then reconciling. _Keep that in mind when discussing because they are two very different things!_
+## Reconciliation
+
+Now that we have generated a hierarchical time-serires we can attempt to reconcile the two zones. Reconciliation is done using the optimal reconciliation and weighted optimal reconciliation methods.
 
 ```{r hierarchical_reconciliation}
 S <- matrix(ncol = 8, nrow = 10, byrow = TRUE,
@@ -394,6 +311,9 @@ fcst_df <- fcst_df %>%
   inner_join(hts_rec_w)
 ```
 
+## Results
+
+The weighted optimal reconciliation method appears to outperform the unreconciled and optimal reconciliation approaches based on RMSE scores.
 
 ```{r reconciliation_plot, fig.height=4}
 p_date <- unique(fcst_df$Date)[2500 + 8:12]
@@ -444,7 +364,9 @@ rmse_df <- fcst_df %>%
                 Reconciled = rmse(.$Demand, .$Prediction_h),
                 Reconciled_weighted = rmse(.$Demand, .$Prediction_wh)))
 
-rmse_df
+kable(rmse_df,
+      caption = "RMSE scores split by zone",
+      digits = 2)
 
 rmse_df %>%
   ungroup() %>% 
@@ -462,6 +384,10 @@ rmse_df <- fcst_df %>%
   do(data.frame(Unreconciled = rmse(.$Demand, .$Prediction),
                 Reconciled = rmse(.$Demand, .$Prediction_h),
                 Reconciled_weighted = rmse(.$Demand, .$Prediction_wh)))
+
+kable(rmse_df,
+      caption = "RMSE scores averaged across all zones",
+      digits = 2)
 
 rmse_df %>%
   gather(Method, RMSE) %>% 
