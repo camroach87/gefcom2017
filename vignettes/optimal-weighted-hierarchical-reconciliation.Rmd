@@ -97,7 +97,7 @@ smd_total <- smd_total %>%
 
 # Introduction
 
-Our objective is to reconcile hierarchical forecasts for the GEFCOM 2017 competition. The hierarchy is unbalanced with two levels. Forecasts have been produced using the L1-penalised linear boosting models. Forecasts have been created using the traing data. We do not concern ourselves with fitting the models to an out-of-sample test set as we are only interested in how well the reconciliation methods work.
+Our objective is to reconcile hierarchical forecasts for the GEFCOM 2017 competition. The hierarchy is unbalanced with two levels. Forecasts have been produced using the L1-penalised linear boosting models. Forecasts have been created using the training data. We do not concern ourselves with fitting the models to an out-of-sample test set as we are only interested in how well the reconciliation methods work.
 
 # GEFCom 2017 data
 
@@ -172,7 +172,10 @@ $$
     y_{SEMASS,t} \\
     y_{WCMASS,t} \\
     y_{NEMASSBOST,t} \\
-  \end{bmatrix} \\
+  \end{bmatrix}
+$$
+
+$$
 \mathbf{y}_t = \mathbf{S}\mathbf{y}_{8,t}
 $$
 
@@ -193,7 +196,7 @@ $$
 where the weights are given as,
 
 $$
-\mathbf{W} = \sum_{n} \bar{y}_n
+\mathbf{W} = \sum_{n} \bar{y}_n \cdot
 \begin{bmatrix}
   \frac{1}{\bar{y}_{TOTAL}} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
   0 & \frac{1}{\bar{y}_{ME}} & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0\\
@@ -248,7 +251,7 @@ _Note: This is now different to what happens in the simulation. In the simulatio
 
 ## Reconciliation
 
-Now that we have generated a hierarchical time-serires we can attempt to reconcile the two zones. Reconciliation is done using the optimal reconciliation and weighted optimal reconciliation methods.
+Now that we have generated a hierarchical time-series we can attempt to reconcile the two zones. Reconciliation is done using the optimal reconciliation and weighted optimal reconciliation methods.
 
 ```{r hierarchical_reconciliation}
 S <- matrix(ncol = 8, nrow = 10, byrow = TRUE,
