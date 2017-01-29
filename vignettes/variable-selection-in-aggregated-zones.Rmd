@@ -106,9 +106,11 @@ Here we test variable selection methods for aggregated zones TOTAL and MASS agai
 First we will test an underspecified model that does not include lags. We will conclude by testing a full specified model. The baseline model will be penalised in this case to ensure that only relevant lags are being included in the final model.
 
 
-# Model fitting - no lags
+# Model evaluation - no lags
 
-Using the years 2009 to 2015 as the training set. 2016 will be omitted and used later as the test set.
+## Data and model fitting
+
+Data in the years 2009 to 2015 will be used as the training set. 2016 will be omitted and used later as the test set.
 
 ```{r fit_model_no_lags}
 xgb_ctrl <- trainControl(method = "repeatedcv",
@@ -250,7 +252,7 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-no-lags.RData"))
 
 ## CV performance
 
-```{r cv_performance}
+```{r cv_performance_no_lags}
 results_df <- NULL
 for (iZ in names(xgb_fit)) {
   for (iM in names(xgb_fit[[iZ]])) {
