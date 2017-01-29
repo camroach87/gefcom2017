@@ -279,5 +279,292 @@ ggplot() +
                      labels = function(x) round(x, 0)) +
   labs(linetype = "Variables",
        colour = "Regularization") +
-  facet_wrap(~Zone, scales = "free_y", nrow = 2)
+  facet_wrap(~Zone, scales = "free_y")
+```
+
+
+
+## Test data results
+
+```{r test_performance_no_lags}
+df_lkp <- data_frame(
+  Zone = rep(c("TOTAL", "MASS"), each = 4),
+  Model = rep(c("Averaged-variables-L1-regularization",
+                "Averaged-variables-L2-regularization",
+                "All-variables-L1-regularization",
+                "All-variables-L2-regularization"), 2),
+  DataFrameName = rep(c("smd_total_avg", "smd_total_all", "smd_mass_avg", 
+                         "smd_mass_all"), each = 2)
+)
+
+test_results_df <- NULL
+for (iZ in names(xgb_fit)) {
+  for (iM in names(xgb_fit[[iZ]])) {
+    df_name <- df_lkp %>% 
+      filter(Zone == iZ,
+             Model == iM) %>% 
+      .$DataFrameName
+    
+    test_data <- get(df_name) %>% 
+      filter(Year == 2016)
+    
+    test_results_df <- data.frame(
+      Zone = iZ,
+      Model = iM,
+      Demand = test_data$Demand,
+      Demand_pred = predict(xgb_fit[[iZ]][[iM]], test_data)) %>% 
+      bind_rows(test_results_df, .)
+  }
+}
+
+test_rmse <- test_results_df %>% 
+  group_by(Zone, Model) %>% 
+  summarise(rmse = mean((Demand_pred - Demand)^2)^0.5) %>% 
+  ungroup()
+
+test_rmse %>% 
+  ggplot(aes(x = Model, y = rmse)) +
+  geom_point(size = 2) +
+  ggtitle("RMSE for models on test data set") +
+  coord_flip() +
+  facet_wrap(~Zone, scales = "free_x", ncol = 1)
+```
+
+
+# Model evaluation - with lags
+
+We will now repeat this simple analysis for a fully specified model containing all lags for the temperature variables.
+
+## Data and model fitting
+
+Lagged dummy variables are created for the dry bulb and dew point temperature variables.
+
+```{r create_lags}
+smd_mass_avg <- smd_mass_avg %>%
+  do(get_lagged_vars(., 
+                     names(select(., contains("DryBulb"), contains("DewPnt"))),
+                     lags = 1:72))
+
+smd_mass_all <- smd_mass_all %>%
+  do(get_lagged_vars(., 
+                     names(select(., contains("DryBulb"), contains("DewPnt"))),
+                     lags = 1:72))
+
+smd_total_avg <- smd_total_avg %>%
+  do(get_lagged_vars(., 
+                     names(select(., contains("DryBulb"), contains("DewPnt"))),
+                     lags = 1:72))
+
+smd_total_all <- smd_total_all %>%
+  do(get_lagged_vars(., 
+                     names(select(., contains("DryBulb"), contains("DewPnt"))),
+                     lags = 1:72))
+```
+
+Once again, data in the years 2009 to 2015 will be used as the training set. 2016 will be omitted and used later as the test set.
+
+```{r fit_model_lags}
+xgb_ctrl <- trainControl(method = "repeatedcv",
+                         number = 5,
+                         allowParallel = TRUE)
+
+
+if (file.exists("./cache/variable-selection-in-aggregated-zones-lags.RData")) {
+  load("./cache/variable-selection-in-aggregated-zones-lags.RData")
+} else {
+  system.time({
+    xgb_fit_lags <- NULL
+    
+    cat("Fitting TOTAL with averaged variables. L1 penalty...\n")
+    xgb_fit_lags[["TOTAL"]][["Averaged-variables-L1-regularization"]] <- smd_total_avg %>% 
+      filter(Year %in% 2009:2015) %>% 
+      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
+             contains("DewPnt")) %>%
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = expand.grid(nrounds = 300,
+                                   alpha = c(0, exp(0:8)),
+                                   lambda = 0,
+                                   eta = 0.1),
+            nthread = 1)
+    
+    cat("Fitting TOTAL with averaged variables. L2 penalty...\n")
+    xgb_fit_lags[["TOTAL"]][["Averaged-variables-L2-regularization"]] <- smd_total_avg %>% 
+      filter(Year %in% 2009:2015) %>% 
+      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
+             contains("DewPnt")) %>%
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = expand.grid(nrounds = 300,
+                                   alpha = 0,
+                                   lambda = c(0, exp(0:8)),
+                                   eta = 0.1),
+            nthread = 1)
+    
+    cat("Fitting TOTAL with all variables. L1 penalty...\n")
+    xgb_fit_lags[["TOTAL"]][["All-variables-L1-regularization"]] <- smd_total_all %>% 
+      filter(Year %in% 2009:2015) %>% 
+      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
+             contains("DewPnt")) %>%
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = expand.grid(nrounds = 300,
+                                   alpha = c(0, exp(0:8)),
+                                   lambda = 0,
+                                   eta = 0.1),
+            nthread = 1)
+    
+    cat("Fitting TOTAL with all variables. L2 penalty...\n")
+    xgb_fit_lags[["TOTAL"]][["All-variables-L2-regularization"]] <- smd_total_all %>% 
+      filter(Year %in% 2009:2015) %>% 
+      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
+             contains("DewPnt")) %>%
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = expand.grid(nrounds = 300,
+                                   alpha = 0,
+                                   lambda = c(0, exp(0:8)),
+                                   eta = 0.1),
+            nthread = 1)
+    
+    cat("Fitting MASS with averaged variables. L1 penalty...\n")
+    xgb_fit_lags[["MASS"]][["Averaged-variables-L1-regularization"]] <- smd_mass_avg %>% 
+      filter(Year %in% 2009:2015) %>% 
+      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
+             contains("DewPnt")) %>%
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = expand.grid(nrounds = 300,
+                                   alpha = c(0, exp(0:8)),
+                                   lambda = 0,
+                                   eta = 0.1),
+            nthread = 1)
+    
+    cat("Fitting MASS with averaged variables. L2 penalty...\n")
+    xgb_fit_lags[["MASS"]][["Averaged-variables-L2-regularization"]] <- smd_mass_avg %>% 
+      filter(Year %in% 2009:2015) %>% 
+      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
+             contains("DewPnt")) %>%
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = expand.grid(nrounds = 300,
+                                   alpha = 0,
+                                   lambda = c(0, exp(0:8)),
+                                   eta = 0.1),
+            nthread = 1)
+    
+    cat("Fitting MASS with all variables. L1 penalty...\n")
+    xgb_fit_lags[["MASS"]][["All-variables-L1-regularization"]] <- smd_mass_all %>% 
+      filter(Year %in% 2009:2015) %>% 
+      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
+             contains("DewPnt")) %>%
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = expand.grid(nrounds = 300,
+                                   alpha = c(0, exp(0:8)),
+                                   lambda = 0,
+                                   eta = 0.1),
+            nthread = 1)
+    
+    cat("Fitting MASS with all variables. L2 penalty...\n")
+    xgb_fit_lags[["MASS"]][["All-variables-L2-regularization"]] <- smd_mass_all %>% 
+      filter(Year %in% 2009:2015) %>% 
+      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
+             contains("DewPnt")) %>%
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = expand.grid(nrounds = 300,
+                                   alpha = 0,
+                                   lambda = c(0, exp(0:8)),
+                                   eta = 0.1),
+            nthread = 1)
+    
+  })
+  
+  save(xgb_fit_lags, file = "./cache/variable-selection-in-aggregated-zones-lags.RData")
+}
+```
+
+
+```{r cv_performance_no_lags}
+results_df_lags <- NULL
+for (iZ in names(xgb_fit_lags)) {
+  for (iM in names(xgb_fit_lags[[iZ]])) {
+    results_df_lags <- data.frame(Zone = iZ,
+                             Model = iM,
+                             xgb_fit_lags[[iZ]][[iM]]$results) %>% 
+      bind_rows(results_df_lags, .)
+  }
+}
+
+ggplot() +
+  geom_line(data = filter(results_df_lags, Model == "Averaged-variables-L1-regularization"), 
+            aes(x = alpha, y = RMSE, colour = "L1-regularization", linetype = "Averaged-variables")) +
+  geom_line(data = filter(results_df_lags, Model == "Averaged-variables-L2-regularization"), 
+            aes(x = lambda, y = RMSE, colour = "L2-regularization", linetype = "Averaged-variables")) +
+  geom_line(data = filter(results_df_lags, Model == "All-variables-L1-regularization"), 
+            aes(x = alpha, y = RMSE, colour = "L1-regularization", linetype = "All-variables")) +
+  geom_line(data = filter(results_df_lags, Model == "All-variables-L2-regularization"), 
+            aes(x = lambda, y = RMSE, colour = "L2-regularization", linetype = "All-variables")) +
+  ggtitle("5-fold CV RMSE by zone",
+          "Lagged variables included") +
+  xlab("Penalty") +
+  scale_x_continuous(trans = "log",
+                     labels = function(x) round(x, 0)) +
+  labs(linetype = "Variables",
+       colour = "Regularization") +
+  facet_wrap(~Zone, scales = "free_y")
+```
+
+
+## Test data results
+
+```{r test_performance_no_lags}
+test_results_df_lags <- NULL
+for (iZ in names(xgb_fit)) {
+  for (iM in names(xgb_fit[[iZ]])) {
+    df_name <- df_lkp %>% 
+      filter(Zone == iZ,
+             Model == iM) %>% 
+      .$DataFrameName
+    
+    test_data <- get(df_name) %>% 
+      filter(Year == 2016)
+    
+    test_results_df_lags <- data.frame(
+      Zone = iZ,
+      Model = iM,
+      Demand = test_data$Demand,
+      Demand_pred = predict(xgb_fit[[iZ]][[iM]], test_data)) %>% 
+      bind_rows(test_results_df_lags, .)
+  }
+}
+
+test_rmse_lags <- test_results_df_lags %>% 
+  group_by(Zone, Model) %>% 
+  summarise(rmse = mean((Demand_pred - Demand)^2)^0.5) %>% 
+  ungroup()
+
+test_rmse_lags %>% 
+  ggplot(aes(x = Model, y = rmse)) +
+  geom_point(size = 2) +
+  ggtitle("RMSE for models on test data set") +
+  coord_flip() +
+  facet_wrap(~Zone, scales = "free_x", ncol = 1)
 ```
