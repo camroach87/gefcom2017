@@ -101,7 +101,7 @@ smd_total_all <- smd_total_all %>%
 
 # Introduction
 
-Here we test variable selection methods for aggregated zones TOTAL and MASS against a baseline model. The variable selection methods include L1 and L2 penalisation within a linear booster. The baseline model will simply be the average of all weather stations that fall within an aggregated zone.
+Here we test variable selection methods for aggregated zones TOTAL and MASS against a baseline model. The variable selection methods include L1 and L2 penalisation within a linear booster. The baseline model will simply be the average of all weather stations that fall within an aggregated zone. The baseline model will also be tested with L1 and L2 regularization to ensure consistency.
 
 First we will test an underspecified model that does not include lags. We will conclude by testing a full specified model. The baseline model will be penalised in this case to ensure that only relevant lags are being included in the final model.
 
@@ -122,8 +122,23 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-no-lags.RData"))
   system.time({
     xgb_fit <- NULL
     
-    cat("Fitting TOTAL with averaged variables. No penalty...\n")
-    xgb_fit[["TOTAL"]][["AvgVars_NoLags_NoPenalty"]] <- smd_total_avg %>% 
+    cat("Fitting TOTAL with averaged variables. L1 penalty...\n")
+    xgb_fit[["TOTAL"]][["Averaged-variables-L1-regularization"]] <- smd_total_avg %>% 
+      filter(Year %in% 2009:2015) %>% 
+      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
+             contains("DewPnt")) %>%
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = expand.grid(nrounds = 300,
+                                   alpha = c(0, exp(0:8)),
+                                   lambda = 0,
+                                   eta = 0.1),
+            nthread = 1)
+    
+    cat("Fitting TOTAL with averaged variables. L2 penalty...\n")
+    xgb_fit[["TOTAL"]][["Averaged-variables-L2-regularization"]] <- smd_total_avg %>% 
       filter(Year %in% 2009:2015) %>% 
       select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
              contains("DewPnt")) %>%
@@ -133,12 +148,12 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-no-lags.RData"))
             trControl = xgb_ctrl,
             tuneGrid = expand.grid(nrounds = 300,
                                    alpha = 0,
-                                   lambda = 0,
+                                   lambda = c(0, exp(0:8)),
                                    eta = 0.1),
             nthread = 1)
     
     cat("Fitting TOTAL with all variables. L1 penalty...\n")
-    xgb_fit[["TOTAL"]][["AllVars_NoLags_L1Penalty"]] <- smd_total_all %>% 
+    xgb_fit[["TOTAL"]][["All-variables-L1-regularization"]] <- smd_total_all %>% 
       filter(Year %in% 2009:2015) %>% 
       select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
              contains("DewPnt")) %>%
@@ -147,13 +162,13 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-no-lags.RData"))
             method="xgbLinear",
             trControl = xgb_ctrl,
             tuneGrid = expand.grid(nrounds = 300,
-                                   alpha = c(0, exp(0:7)),
+                                   alpha = c(0, exp(0:8)),
                                    lambda = 0,
                                    eta = 0.1),
             nthread = 1)
     
     cat("Fitting TOTAL with all variables. L2 penalty...\n")
-    xgb_fit[["TOTAL"]][["AllVars_NoLags_L2Penalty"]] <- smd_total_all %>% 
+    xgb_fit[["TOTAL"]][["All-variables-L2-regularization"]] <- smd_total_all %>% 
       filter(Year %in% 2009:2015) %>% 
       select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
              contains("DewPnt")) %>%
@@ -163,57 +178,9 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-no-lags.RData"))
             trControl = xgb_ctrl,
             tuneGrid = expand.grid(nrounds = 300,
                                    alpha = 0,
-                                   lambda = c(0, exp(0:7)),
+                                   lambda = c(0, exp(0:8)),
                                    eta = 0.1),
             nthread = 1)
-    
-    
-    cat("Fitting MASS with averaged variables. No penalty...\n")
-    xgb_fit[["MASS"]][["AvgVars_NoLags_NoPenalty"]] <- smd_mass_avg %>% 
-      filter(Year %in% 2009:2015) %>% 
-      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
-             contains("DewPnt")) %>%
-      train(Demand ~ . ,
-            data = .,
-            method="xgbLinear",
-            trControl = xgb_ctrl,
-            tuneGrid = expand.grid(nrounds = 300,
-                                   alpha = 0,
-                                   lambda = 0,
-                                   eta = 0.1),
-            nthread = 1)
-    
-    cat("Fitting MASS with all variables. L1 penalty...\n")
-    xgb_fit[["MASS"]][["AllVars_NoLags_L1Penalty"]] <- smd_mass_all %>% 
-      filter(Year %in% 2009:2015) %>% 
-      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
-             contains("DewPnt")) %>%
-      train(Demand ~ . ,
-            data = .,
-            method="xgbLinear",
-            trControl = xgb_ctrl,
-            tuneGrid = expand.grid(nrounds = 300,
-                                   alpha = c(0, exp(0:7)),
-                                   lambda = 0,
-                                   eta = 0.1),
-            nthread = 1)
-    
-    cat("Fitting MASS with all variables. L2 penalty...\n")
-    xgb_fit[["MASS"]][["AllVars_NoLags_L2Penalty"]] <- smd_mass_all %>% 
-      filter(Year %in% 2009:2015) %>% 
-      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
-             contains("DewPnt")) %>%
-      train(Demand ~ . ,
-            data = .,
-            method="xgbLinear",
-            trControl = xgb_ctrl,
-            tuneGrid = expand.grid(nrounds = 300,
-                                   alpha = 0,
-                                   lambda = c(0, exp(0:7)),
-                                   eta = 0.1),
-            nthread = 1)
-    
-    
     
   })
   
@@ -234,18 +201,17 @@ for (iZ in names(xgb_fit)) {
   }
 }
 
-results_df <- results_df %>% 
-  mutate(Zone = factor(Zone, levels = all_zones, ordered = T)) # order subplots
-
 ggplot() +
-  geom_hline(data = filter(results_df, Model == "Manual"),
-             aes(yintercept = RMSE, colour = Model),
-             linetype = "dashed") +
-  geom_line(data = filter(results_df, Model == "L1-regularization"), 
+  geom_line(data = filter(results_df, Model == "Averaged-variables-L1-regularization"), 
             aes(x = alpha, y = RMSE, colour = Model)) +
-  geom_line(data = filter(results_df, Model == "L2-regularization"), 
+  geom_line(data = filter(results_df, Model == "Averaged-variables-L2-regularization"), 
             aes(x = lambda, y = RMSE, colour = Model)) +
-  ggtitle("5-fold CV RMSE by zone") +
+  geom_line(data = filter(results_df, Model == "All-variables-L1-regularization"), 
+            aes(x = alpha, y = RMSE, colour = Model)) +
+  geom_line(data = filter(results_df, Model == "All-variables-L2-regularization"), 
+            aes(x = lambda, y = RMSE, colour = Model)) +
+  ggtitle("5-fold CV RMSE by zone",
+          "No lagged variables included") +
   xlab("Penalty") +
   scale_x_continuous(trans = "log",
                      labels = function(x) round(x, 0)) +
