@@ -182,6 +182,66 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-no-lags.RData"))
                                    eta = 0.1),
             nthread = 1)
     
+    cat("Fitting MASS with averaged variables. L1 penalty...\n")
+    xgb_fit[["MASS"]][["Averaged-variables-L1-regularization"]] <- smd_mass_avg %>% 
+      filter(Year %in% 2009:2015) %>% 
+      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
+             contains("DewPnt")) %>%
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = expand.grid(nrounds = 300,
+                                   alpha = c(0, exp(0:8)),
+                                   lambda = 0,
+                                   eta = 0.1),
+            nthread = 1)
+    
+    cat("Fitting MASS with averaged variables. L2 penalty...\n")
+    xgb_fit[["MASS"]][["Averaged-variables-L2-regularization"]] <- smd_mass_avg %>% 
+      filter(Year %in% 2009:2015) %>% 
+      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
+             contains("DewPnt")) %>%
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = expand.grid(nrounds = 300,
+                                   alpha = 0,
+                                   lambda = c(0, exp(0:8)),
+                                   eta = 0.1),
+            nthread = 1)
+    
+    cat("Fitting MASS with all variables. L1 penalty...\n")
+    xgb_fit[["MASS"]][["All-variables-L1-regularization"]] <- smd_mass_all %>% 
+      filter(Year %in% 2009:2015) %>% 
+      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
+             contains("DewPnt")) %>%
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = expand.grid(nrounds = 300,
+                                   alpha = c(0, exp(0:8)),
+                                   lambda = 0,
+                                   eta = 0.1),
+            nthread = 1)
+    
+    cat("Fitting MASS with all variables. L2 penalty...\n")
+    xgb_fit[["MASS"]][["All-variables-L2-regularization"]] <- smd_mass_all %>% 
+      filter(Year %in% 2009:2015) %>% 
+      select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
+             contains("DewPnt")) %>%
+      train(Demand ~ . ,
+            data = .,
+            method="xgbLinear",
+            trControl = xgb_ctrl,
+            tuneGrid = expand.grid(nrounds = 300,
+                                   alpha = 0,
+                                   lambda = c(0, exp(0:8)),
+                                   eta = 0.1),
+            nthread = 1)
+    
   })
   
   save(xgb_fit, file = "./cache/variable-selection-in-aggregated-zones-no-lags.RData")
