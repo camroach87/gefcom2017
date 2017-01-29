@@ -203,17 +203,19 @@ for (iZ in names(xgb_fit)) {
 
 ggplot() +
   geom_line(data = filter(results_df, Model == "Averaged-variables-L1-regularization"), 
-            aes(x = alpha, y = RMSE, colour = Model)) +
+            aes(x = alpha, y = RMSE, colour = "L1-regularization", linetype = "Averaged-variables")) +
   geom_line(data = filter(results_df, Model == "Averaged-variables-L2-regularization"), 
-            aes(x = lambda, y = RMSE, colour = Model)) +
+            aes(x = lambda, y = RMSE, colour = "L2-regularization", linetype = "Averaged-variables")) +
   geom_line(data = filter(results_df, Model == "All-variables-L1-regularization"), 
-            aes(x = alpha, y = RMSE, colour = Model)) +
+            aes(x = alpha, y = RMSE, colour = "L1-regularization", linetype = "All-variables")) +
   geom_line(data = filter(results_df, Model == "All-variables-L2-regularization"), 
-            aes(x = lambda, y = RMSE, colour = Model)) +
+            aes(x = lambda, y = RMSE, colour = "L2-regularization", linetype = "All-variables")) +
   ggtitle("5-fold CV RMSE by zone",
           "No lagged variables included") +
   xlab("Penalty") +
   scale_x_continuous(trans = "log",
                      labels = function(x) round(x, 0)) +
+  labs(linetype = "Variables",
+       colour = "Regularization") +
   facet_wrap(~Zone, scales = "free_y", nrow = 2)
 ```
