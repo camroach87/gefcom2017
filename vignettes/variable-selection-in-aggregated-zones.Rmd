@@ -364,6 +364,8 @@ smd_total_all <- smd_total_all %>%
 Once again, data in the years 2009 to 2015 will be used as the training set. 2016 will be omitted and used later as the test set.
 
 ```{r fit_model_lags}
+# TODO: This hangs sometimes (11 threads but 0% CPU). Runs if setup chunk and create_lags chunk are the only chunks run prior. Try and include more chunks and see which one causes this to hang. Work out bug.
+
 if (file.exists("./cache/variable-selection-in-aggregated-zones-lags.RData")) {
   load("./cache/variable-selection-in-aggregated-zones-lags.RData")
 } else {
