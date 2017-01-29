@@ -364,11 +364,6 @@ smd_total_all <- smd_total_all %>%
 Once again, data in the years 2009 to 2015 will be used as the training set. 2016 will be omitted and used later as the test set.
 
 ```{r fit_model_lags}
-xgb_ctrl <- trainControl(method = "repeatedcv",
-                         number = 5,
-                         allowParallel = TRUE)
-
-
 if (file.exists("./cache/variable-selection-in-aggregated-zones-lags.RData")) {
   load("./cache/variable-selection-in-aggregated-zones-lags.RData")
 } else {
@@ -502,7 +497,7 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-lags.RData")) {
 ```
 
 
-```{r cv_performance_no_lags}
+```{r cv_performance_lags}
 results_df_lags <- NULL
 for (iZ in names(xgb_fit_lags)) {
   for (iM in names(xgb_fit_lags[[iZ]])) {
@@ -535,7 +530,7 @@ ggplot() +
 
 ## Test data results
 
-```{r test_performance_no_lags}
+```{r test_performance_lags}
 test_results_df_lags <- NULL
 for (iZ in names(xgb_fit)) {
   for (iM in names(xgb_fit[[iZ]])) {
