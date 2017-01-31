@@ -46,8 +46,8 @@ agg_zones <- c("TOTAL", "MASS")
 all_zones <- c("TOTAL", "ME", "NH", "VT", "CT", "RI", "MASS", load_zones_ma) # hierarchical order
 hts_recon_flag <- TRUE
 n_sims <- 100
-fcst_start_date <- dmy("1/2/2016")
-fcst_end_date <- dmy("1/3/2016") - 1
+fcst_start_date <- dmy("1/3/2016")
+fcst_end_date <- dmy("1/4/2016") - 1
 
 # Load data
 smd <- load_smd_data(load_zones, root_dir = ".")
