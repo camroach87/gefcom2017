@@ -365,6 +365,12 @@ Once again, data in the years 2009 to 2015 will be used as the training set. 201
 
 ```{r fit_model_lags}
 # TODO: This hangs sometimes (11 threads but 0% CPU). Runs if setup chunk and create_lags chunk are the only chunks run prior. Try and include more chunks and see which one causes this to hang. Work out bug.
+# Note: I'm only fitting 2012 to 2015 data here - had to cut down training data size to get it to work :(
+
+xgb_ctrl <- trainControl(method = "repeatedcv",
+                         number = 5,
+                         allowParallel = TRUE)
+
 
 if (file.exists("./cache/variable-selection-in-aggregated-zones-lags.RData")) {
   load("./cache/variable-selection-in-aggregated-zones-lags.RData")
@@ -374,7 +380,8 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-lags.RData")) {
     
     cat("Fitting TOTAL with averaged variables. L1 penalty...\n")
     xgb_fit_lags[["TOTAL"]][["Averaged-variables-L1-regularization"]] <- smd_total_avg %>% 
-      filter(Year %in% 2009:2015) %>% 
+      #filter(Year %in% 2009:2015) %>% 
+      filter(Year %in% 2012:2015) %>% 
       select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
              contains("DewPnt")) %>%
       train(Demand ~ . ,
@@ -389,7 +396,8 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-lags.RData")) {
     
     cat("Fitting TOTAL with averaged variables. L2 penalty...\n")
     xgb_fit_lags[["TOTAL"]][["Averaged-variables-L2-regularization"]] <- smd_total_avg %>% 
-      filter(Year %in% 2009:2015) %>% 
+      #filter(Year %in% 2009:2015) %>% 
+      filter(Year %in% 2012:2015) %>% 
       select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
              contains("DewPnt")) %>%
       train(Demand ~ . ,
@@ -404,7 +412,8 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-lags.RData")) {
     
     cat("Fitting TOTAL with all variables. L1 penalty...\n")
     xgb_fit_lags[["TOTAL"]][["All-variables-L1-regularization"]] <- smd_total_all %>% 
-      filter(Year %in% 2009:2015) %>% 
+      #filter(Year %in% 2009:2015) %>% 
+      filter(Year %in% 2012:2015) %>% 
       select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
              contains("DewPnt")) %>%
       train(Demand ~ . ,
@@ -419,7 +428,8 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-lags.RData")) {
     
     cat("Fitting TOTAL with all variables. L2 penalty...\n")
     xgb_fit_lags[["TOTAL"]][["All-variables-L2-regularization"]] <- smd_total_all %>% 
-      filter(Year %in% 2009:2015) %>% 
+      #filter(Year %in% 2009:2015) %>% 
+      filter(Year %in% 2012:2015) %>% 
       select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
              contains("DewPnt")) %>%
       train(Demand ~ . ,
@@ -434,7 +444,8 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-lags.RData")) {
     
     cat("Fitting MASS with averaged variables. L1 penalty...\n")
     xgb_fit_lags[["MASS"]][["Averaged-variables-L1-regularization"]] <- smd_mass_avg %>% 
-      filter(Year %in% 2009:2015) %>% 
+      #filter(Year %in% 2009:2015) %>% 
+      filter(Year %in% 2012:2015) %>% 
       select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
              contains("DewPnt")) %>%
       train(Demand ~ . ,
@@ -449,7 +460,8 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-lags.RData")) {
     
     cat("Fitting MASS with averaged variables. L2 penalty...\n")
     xgb_fit_lags[["MASS"]][["Averaged-variables-L2-regularization"]] <- smd_mass_avg %>% 
-      filter(Year %in% 2009:2015) %>% 
+      #filter(Year %in% 2009:2015) %>% 
+      filter(Year %in% 2012:2015) %>% 
       select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
              contains("DewPnt")) %>%
       train(Demand ~ . ,
@@ -464,7 +476,8 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-lags.RData")) {
     
     cat("Fitting MASS with all variables. L1 penalty...\n")
     xgb_fit_lags[["MASS"]][["All-variables-L1-regularization"]] <- smd_mass_all %>% 
-      filter(Year %in% 2009:2015) %>% 
+      #filter(Year %in% 2009:2015) %>% 
+      filter(Year %in% 2012:2015) %>% 
       select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
              contains("DewPnt")) %>%
       train(Demand ~ . ,
@@ -479,7 +492,8 @@ if (file.exists("./cache/variable-selection-in-aggregated-zones-lags.RData")) {
     
     cat("Fitting MASS with all variables. L2 penalty...\n")
     xgb_fit_lags[["MASS"]][["All-variables-L2-regularization"]] <- smd_mass_all %>% 
-      filter(Year %in% 2009:2015) %>% 
+      #filter(Year %in% 2009:2015) %>% 
+      filter(Year %in% 2012:2015) %>% 
       select(Demand, Hour, DoY, DoW, Holiday_flag, contains("DryBulb"), 
              contains("DewPnt")) %>%
       train(Demand ~ . ,
@@ -533,9 +547,19 @@ ggplot() +
 ## Test data results
 
 ```{r test_performance_lags}
+df_lkp <- data_frame(
+  Zone = rep(c("TOTAL", "MASS"), each = 4),
+  Model = rep(c("Averaged-variables-L1-regularization",
+                "Averaged-variables-L2-regularization",
+                "All-variables-L1-regularization",
+                "All-variables-L2-regularization"), 2),
+  DataFrameName = rep(c("smd_total_avg", "smd_total_all", "smd_mass_avg", 
+                         "smd_mass_all"), each = 2)
+)
+
 test_results_df_lags <- NULL
-for (iZ in names(xgb_fit)) {
-  for (iM in names(xgb_fit[[iZ]])) {
+for (iZ in names(xgb_fit_lags)) {
+  for (iM in names(xgb_fit_lags[[iZ]])) {
     df_name <- df_lkp %>% 
       filter(Zone == iZ,
              Model == iM) %>% 
@@ -548,7 +572,7 @@ for (iZ in names(xgb_fit)) {
       Zone = iZ,
       Model = iM,
       Demand = test_data$Demand,
-      Demand_pred = predict(xgb_fit[[iZ]][[iM]], test_data)) %>% 
+      Demand_pred = predict(xgb_fit_lags[[iZ]][[iM]], test_data)) %>% 
       bind_rows(test_results_df_lags, .)
   }
 }
