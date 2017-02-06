@@ -723,7 +723,8 @@ Quantiles may be calculated for each hour of each day by simply calculating the 
 ```{r calc_quantiles}
 quantile_fcst <- hts_rec_w %>%
   group_by(Zone, ts, Date, Hour) %>%
-  summarise(Q10 = quantile(Prediction_rec, 0.1),
+  summarise(Q0 = quantile(Prediction_rec, 0),
+            Q10 = quantile(Prediction_rec, 0.1),
             Q20 = quantile(Prediction_rec, 0.2),
             Q30 = quantile(Prediction_rec, 0.3),
             Q40 = quantile(Prediction_rec, 0.4),
@@ -731,7 +732,8 @@ quantile_fcst <- hts_rec_w %>%
             Q60 = quantile(Prediction_rec, 0.6),
             Q70 = quantile(Prediction_rec, 0.7),
             Q80 = quantile(Prediction_rec, 0.8),
-            Q90 = quantile(Prediction_rec, 0.9)) %>%
+            Q90 = quantile(Prediction_rec, 0.9),
+            Q100 = quantile(Prediction_rec, 1)) %>%
   ungroup()
 # quantile_fcst <- hts_raw %>% 
 #   group_by(Zone, ts, Date, Hour) %>% 
@@ -762,9 +764,14 @@ for (iZ in all_zones) {
            date(ts) <= fcst_end_date)
   
   p <- ggplot() +
+    geom_ribbon(data = quantile_fcst %>% 
+                filter(Zone == iZ) %>% 
+                select(ts, Q0, Q100) %>% 
+                mutate(Week = week(ts)),
+              aes(x = ts, ymin = Q0, ymax = Q100), alpha = 0.3) +
     geom_line(data = quantile_fcst %>% 
                 filter(Zone == iZ) %>% 
-                select(ts, starts_with("Q")) %>% 
+                select(ts, Q10, Q20, Q30, Q40, Q50, Q60, Q70, Q80, Q90) %>% 
                 gather(Quantile, Demand, -ts) %>% 
                 mutate(Week = week(ts)),
               aes(x = ts, y = Demand, colour = Quantile)) +
