@@ -15,7 +15,7 @@ load_smd_data <- function(load_zones, cache_dir = "./cache", ignore_cache = FALS
 
   root_dir = system.file("extdata", package = "gefcom2017")
 
-  if (file.exists(file.path(root_dir, "cache/smd_data.Rdata")) &
+  if (file.exists(file.path(cache_dir, "smd_data.Rdata")) &
       !ignore_cache) {
     # load smd data frame from cached file
     load(file.path(root_dir, "cache/smd_data.Rdata"))
