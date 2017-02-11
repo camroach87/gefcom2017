@@ -18,7 +18,7 @@ load_smd_data <- function(load_zones, cache_dir = "./cache", ignore_cache = FALS
   if (file.exists(file.path(cache_dir, "smd_data.Rdata")) &
       !ignore_cache) {
     # load smd data frame from cached file
-    load(file.path(root_dir, "cache/smd_data.Rdata"))
+    load(file.path(cache_dir, "smd_data.Rdata"))
   } else {
     # load raw data and then cache smd data frame
     smd <- NULL
