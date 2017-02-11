@@ -8,8 +8,6 @@ get_calendar_vars(x, root_dir = ".")
 }
 \arguments{
 \item{x}{data frame containing date and hour data.}
-
-\item{root_dir}{directory that contains holidays.csv file.}
 }
 \value{
 A data frame containing calendar variables.

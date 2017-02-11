@@ -8,14 +8,15 @@
 #' in both leap years and non-leap years having DoY values of 1,2,...,365.
 #'
 #' @param smd smd data frame containing columns DoY, Year and ts.
-#' @param root_dir Path to the root directory.
 #'
 #' @return smd data_frame containing raw data and calendar variables
 #' @export
 #'
 #' @author Cameron Roach
-clean_smd_data <- function(smd, root_dir = ".") {
-  dst_times <- read.csv(file.path(root_dir, "data/dst_ts.csv")) %>%
+clean_smd_data <- function(smd) {
+  root_dir <- system.file("extdata", package = "gefcom2017")
+
+  dst_times <- read.csv(file.path(root_dir, "dst_ts.csv")) %>%
     mutate(dst_start = ymd_hms(dst_start),
            dst_end = ymd_hms(dst_end))
 

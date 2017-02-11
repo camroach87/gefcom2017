@@ -4,12 +4,10 @@
 \alias{clean_smd_data}
 \title{Load SMD data}
 \usage{
-clean_smd_data(smd, root_dir = ".")
+clean_smd_data(smd)
 }
 \arguments{
 \item{smd}{smd data frame containing columns DoY, Year and ts.}
-
-\item{root_dir}{Path to the root directory.}
 }
 \value{
 smd data_frame containing raw data and calendar variables

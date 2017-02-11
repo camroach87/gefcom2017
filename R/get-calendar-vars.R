@@ -3,14 +3,15 @@
 #' Gets calendar variables such as holiday, hour, day of year, etc.
 #'
 #' @param x data frame containing date and hour data.
-#' @param root_dir directory that contains holidays.csv file.
 #'
 #' @return A data frame containing calendar variables.
 #' @export
 #'
 #' @author Cameron Roach
 get_calendar_vars <- function(x, root_dir = ".") {
-  holidays <- read.csv(file.path(root_dir, "data/holidays/holidays.csv"),
+  root_dir <- system.file("extdata", package = "gefcom2017")
+
+  holidays <- read.csv(file.path(root_dir, "holidays/holidays.csv"),
                        stringsAsFactors = FALSE) %>%
     mutate(Date = mdy(Date))
 
