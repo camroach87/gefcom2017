@@ -1,5 +1,14 @@
 p_date <- dmy("1/3/2016")
 resid_df %>%
+  filter(Zone == "TOTAL",
+         DoW %in% c("Mon", "Tues", "Wed", "Thurs", "Fri")) %>%
+  filter(between(Date, p_date, p_date + days(7))) %>%
+  select(ts, Residual) %>%
+  ggplot(aes(x = ts, y = Residual)) +
+  geom_line()
+
+
+resid_df %>%
   filter(Zone == "TOTAL") %>%
   #mutate(Sim_demand_test = Prediction + lag(Residual, 168)) %>%
   mutate(Sim_demand_test = Prediction + lag(Residual, 168)) %>%
@@ -61,4 +70,14 @@ resid_df %>%
   geom_smooth() +
   facet_grid(Season~WorkingDay)
 
+weekday_residuals <- resid_df %>%
+  filter(Zone == "ME",
+         DoW %in% c("Mon", "Tues", "Wed", "Thurs", "Fri")) %>%
+  .$Residual
+acf(weekday_residuals)
 
+weekend_residuals <- resid_df %>%
+  filter(Zone == "ME",
+         DoW %in% c("Sat", "Sun")) %>%
+  .$Residual
+acf(weekend_residuals, lag.max = 100)
