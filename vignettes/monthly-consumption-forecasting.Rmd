@@ -40,15 +40,16 @@ registerDoMC(cores = 11)
 # Inputs
 load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
 load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
-agg_zones <- c("MASS", "TOTAL")
-all_zones <- c(load_zones, agg_zones)
+agg_zones <- c("TOTAL", "MASS")
+all_zones <- c("TOTAL", "ME", "NH", "VT", "CT", "RI", "MASS", load_zones_ma) # hierarchical order
+hts_recon_flag <- TRUE
 n_sims <- 100
-fcst_start_date <- dmy("1/2/2016")
-fcst_end_date <- dmy("1/3/2016") - 1
+fcst_start_date <- dmy("1/3/2015")
+fcst_end_date <- dmy("1/3/2015") - 1
 
 # Load data
-smd <- load_smd_data(load_zones, root_dir = ".")
-smd <- clean_smd_data(smd, root_dir = ".")
+smd <- load_smd_data(load_zones)
+smd <- clean_smd_data(smd)
 
 # separate data frames for aggregated zones because may change modelling, 
 # e.g., remove average of variables and include all individual ones.
@@ -73,9 +74,20 @@ smd_total <- smd %>%
   ungroup() %>% 
   mutate(Zone = "TOTAL")
 
-# smd <- filter(smd, Year >= 2011)
-# smd_mass <- filter(smd_mass, Year >= 2011)
-# smd_total <- filter(smd_total, Year >= 2011)
+# create lagged predictors
+smd <- smd %>%
+  group_by(Zone) %>% 
+  do(get_lagged_vars(., c("DryBulb", "DewPnt"), lags = 1:72)) %>% 
+  ungroup() %>% 
+  filter(Year >= 2009)
+
+smd_mass <- smd_mass %>% 
+  do(get_lagged_vars(., c("DryBulb", "DewPnt"), lags = 1:72)) %>% 
+  filter(Year >= 2009)
+
+smd_total <- smd_total %>% 
+  do(get_lagged_vars(., c("DryBulb", "DewPnt"), lags = 1:72)) %>% 
+  filter(Year >= 2009)
 ```
 
 
@@ -117,10 +129,10 @@ smd %>%
   mutate(MMYY = floor_date(ts, "month")) %>% 
   group_by(Month, Zone, MMYY) %>% 
   summarise(Average_demand = mean(Demand)) %>% 
-  ggplot(aes(x = MMYY, y = Average_demand)) + 
+  ggplot(aes(x = MMYY, y = Average_demand, colour = Zone)) + 
   geom_line() + 
   geom_smooth(method = "lm") +
-  facet_grid(Zone~Month, scales = "free_y") +
+  facet_wrap(~Month) +
   ggtitle("Average demand by load zone")
 
 smd_mass %>%
