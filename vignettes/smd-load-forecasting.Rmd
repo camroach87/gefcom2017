@@ -46,8 +46,8 @@ agg_zones <- c("TOTAL", "MASS")
 all_zones <- c("TOTAL", "ME", "NH", "VT", "CT", "RI", "MASS", load_zones_ma) # hierarchical order
 hts_recon_flag <- TRUE
 n_sims <- 100
-fcst_start_date <- dmy("1/3/2010")
-fcst_end_date <- dmy("1/4/2010") - 1
+fcst_start_date <- dmy("1/3/2016")
+fcst_end_date <- dmy("1/4/2016") - 1
 
 # Load data
 smd <- load_smd_data(load_zones)
@@ -468,8 +468,10 @@ fcst_bs_df <- weather_bs_total %>%
 
 ```{r plot_fitted_values}
 p_sim <- sample(unique(fcst_bs_df$Simulation), 1)
+p_date <- seq(fcst_start_date, fcst_end_date, 1)[8:12]
 fcst_bs_df %>%
-  filter(Simulation == p_sim) %>% 
+  filter(Simulation == p_sim,
+         Date %in% p_date) %>% 
   ggplot(aes(x=ts, y=Prediction, colour = Zone)) +
   geom_line() +
   ggtitle("Predicted demand for forecast period.",
@@ -528,9 +530,8 @@ fcst_bs_df <- fcst_bs_df %>%
 
 ```{r plot_combine_pred_resid, fig.height=13, fig.width = 9}
 fcst_bs_df %>%
-  #filter(Simulation == p_sim) %>% 
-  filter(Date %in% unique(hts_raw$Date)[0 + 1:7],
-         Simulation == 1) %>% 
+  filter(Simulation == p_sim,
+         Date %in% p_date) %>% 
   select(ts, Prediction, Prediction_adj, Zone) %>% 
   gather(var, val, -c(ts, Zone)) %>% 
   ggplot(aes(x=ts, y=val, colour = Zone, linetype = var)) +
@@ -540,6 +541,24 @@ fcst_bs_df %>%
   #facet_wrap(~Zone, scales = "free_y", ncol = 2) +
   ggtitle("Predicted demand and adjusted demand for forecast period.",
           paste("Simulation", p_sim))
+
+# Check that the residual adjustment isn't shifting the mean (wouldn't expect it to)
+fcst_bs_df %>% 
+  filter(Zone == "TOTAL") %>% 
+  group_by(DoW, Hour) %>% 
+  summarise(Prediction = mean(Prediction, na.rm = TRUE),
+            Prediction_adj = mean(Prediction_adj, na.rm = TRUE)) %>% 
+  gather(var, val, -c(DoW, Hour)) %>% 
+  ggplot(aes(x = Hour, y = val, colour = var)) + 
+  geom_line() + 
+  facet_wrap(~DoW)
+resid_df %>% 
+  filter(Zone == "TOTAL") %>% 
+  group_by(DoW, Hour) %>% 
+  summarise(Residual = mean(Residual, na.rm=T)) %>% 
+  ggplot(aes(x = Hour, y = Residual)) + 
+  geom_line() + 
+  facet_wrap(~DoW)
 ```
 
 
@@ -688,7 +707,6 @@ if (hts_recon_flag == TRUE) {
 We can see a comparison of the reconciled and unreconciled forecasts in the plot below. The first day in the forecast horizon is shown.
 
 ```{r reconciliation_plot}
-p_date <- unique(hts_raw$Date)[8:12]
 ggplot() +
   geom_line(data = hts_raw %>% 
               filter(Simulation == p_sim,
