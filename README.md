@@ -4,16 +4,8 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
 
 ## To do
 
-* Reconcile heirarchical forecasts using magic linear algebra stuff. Figure out a good way that doesn't result in non-mass zones being shifted more than mass.
-* ~~PRIORITY: For total should be using column D of the "ISO NE CA" worksheet.~~ Only a tiny difference. Not worrying about this.
-* When testing regularization in boosting, find an algorithmic approach for manual variable model. Maybe try AIC or CV based selection?
-* Monthly consumption forecasting. See doc. Seems to be clear trends for some months. Can use a univariate technique to forecast average hourly demand for each month. Then scale quantiles of normalised demand (demand = demand/avg hourly demand in month)
-* When doing forecasts in March, what happens on DST day? Does forecast data frame return 23 or 24 values? What is the impact on the residual bootstrapping function which always expects 24 periods? TEST!
-* What happens when bootstrapping for those days missing an hour? Does that mean no value is produced for that hour?
-    +Maybe should filter out those days from the bootstrapping process? Actually no - it just means there will be a few less values when calculating the quantiles for that hour and day (or days that use DST days in their bootstrapped samples). ACTUALLY what if data is getting out of sync with time? If
-    + Above point: Can't say the same for residuals though. Need to make sure all 24 periods are present for all blocks.
-* Maybe use the same input data for all models (zones and aggregated areas). Just use `spread` to spread all weather variables by zone. Then feed all of these hundreds of variables into each model for each zone and aggregated zone. See how well it works...
-* Compare an L2 model using weather in all zones to a simple boosting model that just uses average of all zones weather info.
+* Remove caching from the R package functions (e.g. load\_smd\_data). All caching should be done manually to avoid confusion.
+* Double check residual bootstrapping is ok during missing hour when DST kicks in.
 * Calc pinball loss scores on test set.
 * Model training period
     + Maybe have 2 models. One for DST months and another for non-daylight savings times? When DST starts on March 8th, the time of the peak shifts back one period (from 19 to 20). So, basically, it looks like demand is behaving as before (peak still occurs at same non-DST time), but because we have shifted to DST it looks like the peak has been shifted back by an hour. This may be affecting the model fit.
