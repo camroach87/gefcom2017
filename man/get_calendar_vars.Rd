@@ -18,4 +18,3 @@ Gets calendar variables such as holiday, hour, day of year, etc.
 \author{
 Cameron Roach
 }
-

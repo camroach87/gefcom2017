@@ -22,4 +22,3 @@ Loads data for GEFCom2017-D.
 \author{
 Cameron Roach
 }
-

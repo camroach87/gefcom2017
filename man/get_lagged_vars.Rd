@@ -22,4 +22,3 @@ Calculates lagged temperature variables for GEFCOM smd data.
 \author{
 Cameron Roach
 }
-

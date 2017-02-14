@@ -29,4 +29,3 @@ vector of residuals that gets added to data frame.
 \author{
 Cameron Roach
 }
-
