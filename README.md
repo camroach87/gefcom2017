@@ -4,6 +4,7 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
 
 ## To do
 
+* Residual correlation between zones is not being preserved with new day sampling method!!! Make sure same dates are always used!!!
 * Remove caching from the R package functions (e.g. load\_smd\_data). All caching should be done manually to avoid confusion.
 * Double check residual bootstrapping is ok during missing hour when DST kicks in.
 * Calc pinball loss scores on test set.
