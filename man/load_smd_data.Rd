@@ -4,14 +4,10 @@
 \alias{load_smd_data}
 \title{Load SMD data}
 \usage{
-load_smd_data(load_zones, cache_dir = "./cache", ignore_cache = FALSE)
+load_smd_data(load_zones)
 }
 \arguments{
 \item{load_zones}{Electricity load zones.}
-
-\item{cache_dir}{Path to the cache directory.}
-
-\item{ignore_cache}{logical. If TRUE, ignores any cached files and reloads data.}
 }
 \value{
 smd data_frame containing raw data and calendar variables
