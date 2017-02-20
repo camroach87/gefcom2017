@@ -53,8 +53,8 @@ fcst_start_date <- dmy("1/2/2016")
 fcst_end_date <- dmy("1/3/2016") - 1
 
 # Load data
-smd <- load_smd_data(load_zones, root_dir = ".")
-smd <- clean_smd_data(smd, root_dir = ".")
+smd <- load_smd_data(load_zones)
+smd <- clean_smd_data(smd)
 
 # separate data frames for aggregated zones because may change modelling, 
 # e.g., remove average of variables and include all individual ones.
@@ -245,6 +245,11 @@ fcst_df <- smd_total %>%
              Prediction = predict(xgb_fit[["TOTAL"]], .)) %>% 
   select(one_of(fcst_df_vars)) %>% 
   bind_rows(fcst_df)
+
+fcst_df <- fcst_df %>%
+  mutate(Residual = Demand - Prediction,
+         Zone = factor(Zone, levels = all_zones, ordered = T)) # order subplots
+
 ```
 
 _Note: This is now different to what happens in the simulation. In the simulation we also add on residuals and THEN reconcile. Here we are only doing predictions and then reconciling. Keep that in mind when discussing because they are two very different things and both deserve attention._
@@ -276,7 +281,36 @@ y_mean <- c(mean(smd_total$Demand),
             mean(smd[smd$Zone == "SEMASS",]$Demand),
             mean(smd[smd$Zone == "WCMASS",]$Demand),
             mean(smd[smd$Zone == "NEMASSBOST",]$Demand))
-W <- diag(sum(y_mean) / y_mean)
+W_mean <- diag(sum(y_mean) / y_mean)
+
+y_median <- c(median(smd_total$Demand),
+              median(smd[smd$Zone == "ME",]$Demand),
+              median(smd[smd$Zone == "NH",]$Demand),
+              median(smd[smd$Zone == "VT",]$Demand),
+              median(smd[smd$Zone == "CT",]$Demand),
+              median(smd[smd$Zone == "RI",]$Demand),
+              median(smd_mass$Demand),
+              median(smd[smd$Zone == "SEMASS",]$Demand),
+              median(smd[smd$Zone == "WCMASS",]$Demand),
+              median(smd[smd$Zone == "NEMASSBOST",]$Demand))
+W_median <- diag(sum(y_median) / y_median)
+
+y_res_sd <- c(sd(fcst_df[fcst_df$Zone == "TOTAL", "Residual"]),
+              sd(fcst_df[fcst_df$Zone == "ME", "Residual"]),
+              sd(fcst_df[fcst_df$Zone == "NH", "Residual"]),
+              sd(fcst_df[fcst_df$Zone == "VT", "Residual"]),
+              sd(fcst_df[fcst_df$Zone == "CT", "Residual"]),
+              sd(fcst_df[fcst_df$Zone == "RI", "Residual"]),
+              sd(fcst_df[fcst_df$Zone == "MASS", "Residual"]),
+              sd(fcst_df[fcst_df$Zone == "SEMASS", "Residual"]),
+              sd(fcst_df[fcst_df$Zone == "WCMASS", "Residual"]),
+              sd(fcst_df[fcst_df$Zone == "NEMASSBOST", "Residual"]))
+W_res_sd <- diag(1/y_res_sd)
+
+
+
+
+
 
 h_rec <- function(x, S) {
   S %*% solve(t(S) %*% S) %*% t(S) %*% x
@@ -293,25 +327,32 @@ hts_raw <- fcst_df %>%
          SEMASS, WCMASS, NEMASSBOST)
 
 hts_rec <- t(apply(as.matrix(hts_raw[,-c(1:3)]), 1, h_rec, S))
-hts_rec_w <- t(apply(as.matrix(hts_raw[,-c(1:3)]), 1, h_rec_w, S, W))
+hts_rec_mean <- t(apply(as.matrix(hts_raw[,-c(1:3)]), 1, h_rec_w, S, W_mean))
+hts_rec_median <- t(apply(as.matrix(hts_raw[,-c(1:3)]), 1, h_rec_w, S, W_median))
+hts_rec_res_sd <- t(apply(as.matrix(hts_raw[,-c(1:3)]), 1, h_rec_w, S, W_res_sd))
 
-colnames(hts_rec) <- c("TOTAL", "ME", "NH", "VT", "CT", "RI", "MASS",
-                       "SEMASS", "WCMASS", "NEMASSBOST")
-colnames(hts_rec_w) <- c("TOTAL", "ME", "NH", "VT", "CT", "RI", "MASS",
-                         "SEMASS", "WCMASS", "NEMASSBOST")
+colnames(hts_rec) <- colnames(hts_rec_mean) <- colnames(hts_rec_median) <- 
+  colnames(hts_rec_res_sd) <- c("TOTAL", "ME", "NH", "VT", "CT", "RI", "MASS",
+                                "SEMASS", "WCMASS", "NEMASSBOST")
 
 # convert back to a dataframe and correct structure
-hts_rec <- bind_cols(hts_raw[,c(1:3)], as.data.frame(hts_rec)) %>% 
-  gather(Zone, Prediction_rec, -c(ts, Date, Hour)) %>% 
-  rename(Prediction_h = Prediction_rec)
-hts_rec_w <- bind_cols(hts_raw[,c(1:3)], as.data.frame(hts_rec_w)) %>% 
-  gather(Zone, Prediction_rec, -c(ts, Date, Hour)) %>% 
-  rename(Prediction_wh = Prediction_rec)
+format_rec_df <- function(hts_raw, hts_rec, pred_col_name = "Prediction") {
+  hts_rec <- bind_cols(hts_raw[,c(1:3)], as.data.frame(hts_rec)) %>% 
+    gather(Zone, Prediction_rec, -c(ts, Date, Hour))
+  names(hts_rec) <- c("ts", "Date", "Hour", "Zone", pred_col_name)
+  return(hts_rec)
+}
+hts_rec <- format_rec_df(hts_raw, hts_rec, "Prediction_rec")
+hts_rec_mean <- format_rec_df(hts_raw, hts_rec_mean, "Prediction_rec_mean")
+hts_rec_median <- format_rec_df(hts_raw, hts_rec_median, "Prediction_rec_median")
+hts_rec_res_sd <- format_rec_df(hts_raw, hts_rec_res_sd, "Prediction_rec_res_sd")
 
 # Add everything back into data frame
 fcst_df <- fcst_df %>% 
   inner_join(hts_rec) %>% 
-  inner_join(hts_rec_w)
+  inner_join(hts_rec_mean) %>% 
+  inner_join(hts_rec_median) %>% 
+  inner_join(hts_rec_res_sd)
 ```
 
 ## Results
@@ -332,12 +373,22 @@ for (iZ in all_zones) {
                 filter(Zone == iZ,
                        Date %in% p_date) %>% 
                 mutate(Zone = factor(Zone, levels = all_zones, ordered = TRUE)),
-              aes(x = ts, y = Prediction_h, colour = "Reconciled")) +
+              aes(x = ts, y = Prediction_rec, colour = "Reconciled (summing)")) +
     geom_line(data = fcst_df %>% 
                 filter(Zone == iZ,
                        Date %in% p_date) %>% 
                 mutate(Zone = factor(Zone, levels = all_zones, ordered = TRUE)),
-              aes(x = ts, y = Prediction_wh, colour = "Reconciled (weighted)")) +
+              aes(x = ts, y = Prediction_rec_mean, colour = "Reconciled (mean)")) +
+    geom_line(data = fcst_df %>% 
+                filter(Zone == iZ,
+                       Date %in% p_date) %>% 
+                mutate(Zone = factor(Zone, levels = all_zones, ordered = TRUE)),
+              aes(x = ts, y = Prediction_rec_median, colour = "Reconciled (median)")) +
+    geom_line(data = fcst_df %>% 
+                filter(Zone == iZ,
+                       Date %in% p_date) %>% 
+                mutate(Zone = factor(Zone, levels = all_zones, ordered = TRUE)),
+              aes(x = ts, y = Prediction_rec_res_sd, colour = "Reconciled (residual s.d.)")) +
     geom_point(data = fcst_df %>% 
                  filter(Zone == iZ,
                         Date %in% p_date) %>% 
@@ -347,11 +398,11 @@ for (iZ in all_zones) {
                size = 1,
                alpha = 0.5) +
     ylab("Demand") +
-    scale_colour_manual(name = NULL,
-                        values = c("Reconciled (weighted)" = "black",
-                                   "Reconciled" = "red",
-                                   "Unreconciled" = "darkgrey",
-                                   "Actual" = "darkgreen")) +
+    # scale_colour_manual(name = NULL,
+    #                     values = c("Reconciled (weighted)" = "black",
+    #                                "Reconciled" = "red",
+    #                                "Unreconciled" = "darkgrey",
+    #                                "Actual" = "darkgreen")) +
     ggtitle("Hierarchical forecast reconcilation",
             paste("Optimal combination approach, Zone:", iZ))
   
@@ -361,11 +412,17 @@ for (iZ in all_zones) {
 
 
 ```{r rmse_calculations}
+get_sd_residuals <- function(x) {
+  data.frame(Unreconciled = rmse(x$Demand, x$Prediction),
+             Reconciled = rmse(x$Demand, x$Prediction_rec),
+             Reconciled_mean = rmse(x$Demand, x$Prediction_rec_mean),
+             Reconciled_median = rmse(x$Demand, x$Prediction_rec_median),
+             Reconciled_res_sd = rmse(x$Demand, x$Prediction_rec_res_sd))
+}
+
 rmse_df <- fcst_df %>% 
   group_by(Zone) %>% 
-  do(data.frame(Unreconciled = rmse(.$Demand, .$Prediction),
-                Reconciled = rmse(.$Demand, .$Prediction_h),
-                Reconciled_weighted = rmse(.$Demand, .$Prediction_wh)))
+  do(get_sd_residuals(.))
 
 kable(rmse_df,
       caption = "RMSE scores split by zone",
@@ -375,7 +432,7 @@ rmse_df %>%
   ungroup() %>% 
   mutate(Zone = factor(Zone, levels = all_zones, ordered = TRUE)) %>% 
   gather(Method, RMSE, -Zone) %>% 
-  mutate(Method = factor(Method, levels = c("Unreconciled", "Reconciled", "Reconciled_weighted")), ordered = TRUE) %>% 
+  #mutate(Method = factor(Method, levels = c("Unreconciled", "Reconciled", "Reconciled_weighted")), ordered = TRUE) %>% 
   ggplot(aes(x = Zone, y = RMSE, fill = Method)) + 
   geom_col(position = "dodge") +
   #geom_point() +
@@ -384,9 +441,7 @@ rmse_df %>%
   theme(axis.text.x=element_text(angle=45, hjust = 1))
 
 rmse_df <- fcst_df %>% 
-  do(data.frame(Unreconciled = rmse(.$Demand, .$Prediction),
-                Reconciled = rmse(.$Demand, .$Prediction_h),
-                Reconciled_weighted = rmse(.$Demand, .$Prediction_wh)))
+  do(get_sd_residuals(.))
 
 kable(rmse_df,
       caption = "RMSE scores averaged across all zones",
@@ -394,7 +449,7 @@ kable(rmse_df,
 
 rmse_df %>%
   gather(Method, RMSE) %>% 
-  mutate(Method = factor(Method, levels = c("Unreconciled", "Reconciled", "Reconciled_weighted")), ordered = TRUE) %>% 
+  #mutate(Method = factor(Method, levels = c("Unreconciled", "Reconciled", "Reconciled_weighted")), ordered = TRUE) %>% 
   ggplot(aes(x = Method, y = RMSE, fill = Method)) + 
   geom_col(position = "dodge") +
   #geom_point() +
