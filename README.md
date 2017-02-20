@@ -4,12 +4,8 @@ GEFCom2017-D modelling and forecasts. D stands for defined-data track.
 
 ## To do
 
-* Remove caching from the R package functions (e.g. load\_smd\_data). All caching should be done manually to avoid confusion.
-* Double check residual bootstrapping is ok during missing hour when DST kicks in.
-* Calc pinball loss scores on test set.
-* Model training period
-    + Maybe have 2 models. One for DST months and another for non-daylight savings times? When DST starts on March 8th, the time of the peak shifts back one period (from 19 to 20). So, basically, it looks like demand is behaving as before (peak still occurs at same non-DST time), but because we have shifted to DST it looks like the peak has been shifted back by an hour. This may be affecting the model fit.
-    + Or maybe train a new model based of months surrounding forecast period - probably makes more sense than above point.
+* Create a doc comparing some models with and without a trend variable.
+* Maybe train a new model based of months surrounding forecast period - probably makes more sense than above point.
 
 ## Questions
 * Do I need holiday variables when I have day of year variables?
