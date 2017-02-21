@@ -389,14 +389,19 @@ for (iZ in all_zones) {
                        Date %in% p_date) %>% 
                 mutate(Zone = factor(Zone, levels = all_zones, ordered = TRUE)),
               aes(x = ts, y = Prediction_rec_res_sd, colour = "Reconciled (residual s.d.)")) +
-    geom_point(data = fcst_df %>% 
+    # geom_point(data = fcst_df %>% 
+    #              filter(Zone == iZ,
+    #                     Date %in% p_date) %>% 
+    #              mutate(Zone = factor(Zone, levels = all_zones, ordered = TRUE)),
+    #            aes(x = ts, y = Demand, colour = "Actual"),
+    #            shape = 21,
+    #            size = 1,
+    #            alpha = 0.5) +
+    geom_line(data = fcst_df %>% 
                  filter(Zone == iZ,
                         Date %in% p_date) %>% 
                  mutate(Zone = factor(Zone, levels = all_zones, ordered = TRUE)),
-               aes(x = ts, y = Demand, colour = "Actual"),
-               shape = 21,
-               size = 1,
-               alpha = 0.5) +
+               aes(x = ts, y = Demand, colour = "Actual")) +
     ylab("Demand") +
     # scale_colour_manual(name = NULL,
     #                     values = c("Reconciled (weighted)" = "black",
