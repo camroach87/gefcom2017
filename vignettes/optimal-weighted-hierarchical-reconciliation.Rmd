@@ -227,7 +227,7 @@ for (iZ in load_zones) {
   fcst_df <- smd %>% 
     filter(Zone == iZ) %>% 
     data.frame(.,
-               Prediction = predict(xgb_fit[[iZ]], .)) %>% 
+               Prediction = predict(xgb_fit[[iZ]][["XGB"]], .)) %>% 
     select(one_of(fcst_df_vars)) %>% 
     bind_rows(fcst_df)
 }
@@ -235,14 +235,14 @@ for (iZ in load_zones) {
 # MASS predictions
 fcst_df <- smd_mass %>% 
   data.frame(.,
-             Prediction = predict(xgb_fit[["MASS"]], .)) %>% 
+             Prediction = predict(xgb_fit[["MASS"]][["XGB"]], .)) %>% 
   select(one_of(fcst_df_vars)) %>% 
   bind_rows(fcst_df)
 
 # TOTAL predictions
 fcst_df <- smd_total %>% 
   data.frame(.,
-             Prediction = predict(xgb_fit[["TOTAL"]], .)) %>% 
+             Prediction = predict(xgb_fit[["TOTAL"]][["XGB"]], .)) %>% 
   select(one_of(fcst_df_vars)) %>% 
   bind_rows(fcst_df)
 
