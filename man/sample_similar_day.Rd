@@ -4,29 +4,30 @@
 \alias{sample_similar_day}
 \title{Sample similar days}
 \usage{
-sample_similar_day(x_resid, x_fcst)
+sample_similar_day(fcst_dates, resid_dates)
 }
 \arguments{
-\item{x_resid}{data frame containing residuals.}
+\item{fcst_dates}{data frame containing forecasts dates. These are the dates
+we wish to find similar dates for.}
 
-\item{x_fcst}{data frame containing forecasts and dates.}
+\item{resid_dates}{data frame of residual date info. Must contain Date and
+Holiday_flag columns. Only unique values should be included}
 }
 \value{
 The forecast data frame with a new residuals column.
 }
 \description{
-Takes a date as an input and randomly samples another similar date. Similar
-dates can be defined by day of the week or working/non-working days. A window
-that indicates how many months eitherside of the current date can be used for
-sampling can also be specified.
+Takes a vector of dates as inputs and randomly samples another similar date
+from the residual data frame. Similar dates can be defined by day of the week
+or working/non-working days.
 }
 \details{
-TODO: filter for adjacent (+-3) months when selecting residuals - get them from roughly the same time of year
-TODO: split up for holidays and non-holidays
+TODO: remove DST days from potential sample candidates.
 
-TODO: change this so that forecast data frame isn't input. Can just return a
-vector of residuals that gets added to data frame.
+TODO: maybe include a window so that samples come from same time of year
+(i.e. within a few months)
 }
 \author{
 Cameron Roach
 }
+
