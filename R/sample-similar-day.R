@@ -1,66 +1,51 @@
 #' Sample similar days
 #'
-#' Takes a date as an input and randomly samples another similar date. Similar
-#' dates can be defined by day of the week or working/non-working days. A window
-#' that indicates how many months eitherside of the current date can be used for
-#' sampling can also be specified.
+#' Takes a vector of dates as inputs and randomly samples another similar date
+#' from the residual data frame. Similar dates can be defined by day of the week
+#' or working/non-working days.
 #'
-#' TODO: filter for adjacent (+-3) months when selecting residuals - get them from roughly the same time of year
-#' TODO: split up for holidays and non-holidays
+#' TODO: remove DST days from potential sample candidates.
 #'
-#' TODO: change this so that forecast data frame isn't input. Can just return a
-#' vector of residuals that gets added to data frame.
+#' TODO: maybe include a window so that samples come from same time of year
+#' (i.e. within a few months)
 #'
 #'
-#' @param x_resid data frame containing residuals.
-#' @param x_fcst data frame containing forecasts and dates.
+#' @param fcst_dates data frame containing forecasts dates. These are the dates
+#'   we wish to find similar dates for.
+#' @param resid_dates data frame of residual date info. Must contain Date and
+#'   Holiday_flag columns. Only unique values should be included
 #'
 #' @return The forecast data frame with a new residuals column.
 #' @export
 #'
 #' @author Cameron Roach
-sample_similar_day <- function(x_resid, x_fcst) {
-  x_resid <- x_resid %>%
-    filter(Zone == x_fcst$Zone[1]) %>%
-    select(Residual, Date, Period, DoW)
+sample_similar_day <- function(fcst_dates, resid_dates) {
+  root_dir <- system.file("extdata", package = "gefcom2017")
+  holidays <- read.csv(file.path(root_dir, "holidays/holidays.csv"),
+                       stringsAsFactors = FALSE) %>%
+    mutate(Date = mdy(Date))
 
-  n_periods <- length(unique(x_resid$Period))
+  fcst_dates = data_frame(Date = fcst_dates) %>%
+    left_join(holidays) %>%
+    mutate(Holiday = if_else(is.na(Holiday), "NH", Holiday),
+           Holiday_flag = if_else(Holiday == "NH", FALSE, TRUE))
 
-  # remove DST days
-  complete_days <- x_resid %>%
-    count(Date) %>%
-    filter(n == n_periods)
-  x_resid <- filter(x_resid, Date %in% complete_days$Date) %>%
-    arrange(Date, Period)
+  for (iD in 1:length(fcst_dates$Date)) {
+    resid_like_days <- resid_dates %>%
+      filter(wday(Date) == wday(fcst_dates$Date[iD]),
+             Holiday_flag == fcst_dates$Holiday_flag[iD])
 
-  output_df <- NULL
-  for (iD in levels(x_fcst$DoW)) {
-    tmp_fcst <- x_fcst %>%
-      filter(DoW == iD)
-
-    fcst_dates <- tmp_fcst %>%
-      distinct(Date) %>%
-      .$Date
-
-    resid_dates <- x_resid %>%
-      filter(DoW == iD) %>%
-      distinct(Date) %>%
-      .$Date %>%
-      sample(length(fcst_dates))
-
-    date_lkp <- data.frame(
-      Date = fcst_dates,
-      Date_resid = resid_dates
-    )
-
-    tmp_fcst <- inner_join(tmp_fcst, date_lkp, by = "Date")
-    output_df <- bind_rows(output_df, tmp_fcst)
+    if (iD == 1) {
+      resid_date_samples <- sample(resid_like_days$Date, 1)
+    } else {
+      resid_date_samples <- c(resid_date_samples,
+                              sample(resid_like_days$Date, 1))
+    }
   }
 
-  # Do a join between x_fcst and x_resid on resid_date
-  output_df <- inner_join(output_df,
-                          select(x_resid, Date, Period, Residual),
-                          by = c("Date_resid" = "Date", "Period"))
+  fcst_dates <- fcst_dates %>%
+    mutate(Resid_date = resid_date_samples) %>%
+    select(Date, Resid_date)
 
-  return(output_df)
+  return(fcst_dates)
 }
