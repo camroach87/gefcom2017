@@ -24,4 +24,3 @@ in both leap years and non-leap years having DoY values of 1,2,...,365.
 \author{
 Cameron Roach
 }
-

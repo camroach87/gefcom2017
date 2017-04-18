@@ -30,4 +30,3 @@ TODO: maybe include a window so that samples come from same time of year
 \author{
 Cameron Roach
 }
-

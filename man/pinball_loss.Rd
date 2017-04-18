@@ -23,4 +23,3 @@ Calculates the pinball loss score for a given quantile.
 \author{
 Cameron Roach
 }
-
