@@ -6,8 +6,6 @@
 #'
 #' @return Data frame containing shuffled weather scenarios.
 #' @export
-#'
-#' @examples
 shuffle_weather_xgb <- function(x, fcst_start_date, fcst_end_date) {
   # This prevents incomplete shuffles being returned for lead shuffles in forecast year
   x <- x %>%

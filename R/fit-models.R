@@ -1,9 +1,7 @@
 #' Fit xgboost and vanilla models
 #'
-#' @return
+#' @return A list of fitted models.
 #' @export
-#'
-#' @examples
 fit_models <- function() {
   trend_start <- as.numeric(ymd(vanilla_train_start_date, tz = "UTC"))/3600
 

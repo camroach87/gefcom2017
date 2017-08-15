@@ -29,8 +29,6 @@ trim_model_fat <- function(x) {
 #'
 #' @return data frame with RMSE values
 #' @export
-#'
-#' @examples
 get_rmse <- function(x) {
   x = data_frame(Unreconciled = rmse(x$Demand, x$Prediction),
                  Summing = rmse(x$Demand, x$Prediction_rec),

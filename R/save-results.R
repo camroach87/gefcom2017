@@ -5,8 +5,6 @@
 #'
 #' @return Saves an excel file with quantile forecasts for each zone.
 #' @export
-#'
-#' @examples
 save_results <- function(x, file) {
 
   sheet_order <- c("CT", "ME", "NEMASSBOST", "NH", "RI", "SEMASS", "VT",
