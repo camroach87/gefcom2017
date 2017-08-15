@@ -14,4 +14,6 @@ Depends:
     dplyr,
     tidyr,
     lubridate,
-    readxl
+    readxl,
+    caret,
+    xgboost
