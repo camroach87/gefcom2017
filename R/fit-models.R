@@ -1,23 +1,38 @@
 #' Fit xgboost and vanilla models
 #'
+#' @param vanilla_train_start_date start date for vanilla model's training data.
+#' @param vanilla_train_end_date end date for vanilla model's training data.
+#' @param xgb_train_start_date start date for XGBoost model's training data.
+#' @param xgb_train_end_date end date for XGBoost model's training data.
+#'
 #' @return A list of fitted models.
 #' @export
-fit_models <- function() {
+fit_models <- function(vanilla_train_start_date,
+                       vanilla_train_end_date,
+                       xgb_train_start_date,
+                       xgb_train_end_date) {
+  load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
+  load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
+  agg_zones <- c("TOTAL", "MASS")
+  all_zones <- c("TOTAL", "ME", "NH", "VT", "CT", "RI", "MASS",
+                 load_zones_ma) # hierarchical order
+
+
   trend_start <- as.numeric(ymd(vanilla_train_start_date, tz = "UTC"))/3600
 
   #### Load data ====
-  smd <- load_smd_data(load_zones)
-  smd <- clean_smd_data(smd)
+  data <- load_smd_data(load_zones)
+  data <- clean_smd_data(data)
 
   # If a holiday falls on a weekend ignore it. Most holidays are observed on
   # next weekday, but a few earlier years apparently didn't have this.
-  smd <- smd %>%
+  data <- data %>%
     mutate(Holiday_flag = if_else(DoW %in% c("Sat", "Sun"),
                                   FALSE, Holiday_flag))
 
   # separate data frames for aggregated zones because may change modelling,
   # e.g., remove average of variables and include all individual ones.
-  smd_mass <- smd %>%
+  data_mass <- data %>%
     filter(Zone %in% load_zones_ma) %>%
     group_by(Date, Hour, Holiday, Holiday_flag, ts, Period, Year, Month, DoW,
              DoY, Weekend) %>%
@@ -28,7 +43,7 @@ fit_models <- function() {
     ungroup() %>%
     mutate(Zone = "MASS")
 
-  smd_total <- smd %>%
+  data_total <- data %>%
     group_by(Date, Hour, Holiday, Holiday_flag, ts, Period, Year, Month, DoW,
              DoY, Weekend) %>%
     summarise(Demand = sum(Demand),
@@ -38,11 +53,11 @@ fit_models <- function() {
     ungroup() %>%
     mutate(Zone = "TOTAL")
 
-  smd <- bind_rows(smd, smd_mass, smd_total)
-  rm(list = c("smd_mass", "smd_total"))
+  data <- bind_rows(data, data_mass, data_total)
+  rm(list = c("data_mass", "data_total"))
 
   # create training data.frames for all models
-  xgb_train_df <- smd %>%
+  xgb_train_df <- data %>%
     group_by(Zone) %>%
     do(get_lagged_vars(., c("DryBulb", "DewPnt"), lags = 1:72)) %>%
     ungroup() %>%
@@ -50,11 +65,11 @@ fit_models <- function() {
     mutate(Trend = as.numeric(ts)/3600,
            Trend = Trend - trend_start + 1)
 
-  # split into training and test dataframes.
+  # split into training and test data frames.
   xgb_test_df <- filter(xgb_train_df, Date > xgb_train_end_date)
   xgb_train_df <- filter(xgb_train_df, Date <= xgb_train_end_date)
 
-  vanilla_train_df <- smd %>%
+  vanilla_train_df <- data %>%
     filter(Date >= vanilla_train_start_date,
            Date <= vanilla_train_end_date) %>%
     mutate(Trend = as.numeric(ts)/3600,
