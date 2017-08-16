@@ -43,24 +43,25 @@ get_rmse <- function(x) {
 
 #' Get quantiles
 #'
-#' @param x a data frame containing simulated demand
+#' @param x a data frame containing simulated demand.
+#' @param prediction_col string for prediction column name.
 #'
 #' @return A data frame containing quantile forecasts.
 #' @export
-get_quantiles <- function(x) {
+get_quantiles <- function(x, prediction_col) {
   x <- x %>%
     dplyr::group_by(Zone, ts, Date, Hour) %>%
-    dplyr::summarise(Q0 = quantile(Prediction_rec, 0),
-                     Q10 = quantile(Prediction_rec, 0.1),
-                     Q20 = quantile(Prediction_rec, 0.2),
-                     Q30 = quantile(Prediction_rec, 0.3),
-                     Q40 = quantile(Prediction_rec, 0.4),
-                     Q50 = quantile(Prediction_rec, 0.5),
-                     Q60 = quantile(Prediction_rec, 0.6),
-                     Q70 = quantile(Prediction_rec, 0.7),
-                     Q80 = quantile(Prediction_rec, 0.8),
-                     Q90 = quantile(Prediction_rec, 0.9),
-                     Q100 = quantile(Prediction_rec, 1)) %>%
+    dplyr::summarise(Q0 = quantile(!!prediction_col, 0),
+                     Q10 = quantile(!!prediction_col, 0.1),
+                     Q20 = quantile(!!prediction_col, 0.2),
+                     Q30 = quantile(!!prediction_col, 0.3),
+                     Q40 = quantile(!!prediction_col, 0.4),
+                     Q50 = quantile(!!prediction_col, 0.5),
+                     Q60 = quantile(!!prediction_col, 0.6),
+                     Q70 = quantile(!!prediction_col, 0.7),
+                     Q80 = quantile(!!prediction_col, 0.8),
+                     Q90 = quantile(!!prediction_col, 0.9),
+                     Q100 = quantile(!!prediction_col, 1)) %>%
     dplyr::ungroup()
 
   return(x)
