@@ -59,7 +59,7 @@ hts_reconciliation <- function(
                 "WCMASS", "NEMASSBOST")
 ) {
   hts_raw <- fcsts %>%
-    dplyr::select(one_of(variable_cols), Zone, Prediction = get(prediction_col)) %>%
+    dplyr::select(one_of(variable_cols), Zone, Prediction = !!prediction_col) %>%
     tidyr::spread(Zone, Prediction) %>%
     dplyr::select(one_of(c(variable_cols, zone_cols)))
 
