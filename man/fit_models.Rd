@@ -4,17 +4,12 @@
 \alias{fit_models}
 \title{Fit xgboost and vanilla models}
 \usage{
-fit_models(vanilla_train_start_date, vanilla_train_end_date,
-  xgb_train_start_date, xgb_train_end_date)
+fit_models(vanilla_train_df, xgb_train_df)
 }
 \arguments{
-\item{vanilla_train_start_date}{start date for vanilla model's training data.}
+\item{vanilla_train_df}{training data frame for vanilla model.}
 
-\item{vanilla_train_end_date}{end date for vanilla model's training data.}
-
-\item{xgb_train_start_date}{start date for XGBoost model's training data.}
-
-\item{xgb_train_end_date}{end date for XGBoost model's training data.}
+\item{xgb_train_df}{xgb train data frame.}
 }
 \value{
 A list of fitted models.
