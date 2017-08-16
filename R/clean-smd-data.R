@@ -40,21 +40,17 @@ clean_smd_data <- function(smd) {
 #' @param vanilla_train_end_date end date for vanilla model's training data.
 #' @param xgb_train_start_date start date for XGBoost model's training data.
 #' @param xgb_train_end_date end date for XGBoost model's training data.
+#' @param trend_start numeric value indicating trend start.
 #'
 #' @return List containing xgb train, vanilla train and test data frames.
 #' @export
 get_train_test_df <- function(vanilla_train_start_date,
                               vanilla_train_end_date,
                               xgb_train_start_date,
-                              xgb_train_end_date) {
+                              xgb_train_end_date,
+                              trend_start) {
   load_zones_ma <- c("SEMASS", "WCMASS", "NEMASSBOST")
   load_zones <- c("ME", "NH", "VT", "CT", "RI", load_zones_ma)
-  agg_zones <- c("TOTAL", "MASS")
-  all_zones <- c("TOTAL", "ME", "NH", "VT", "CT", "RI", "MASS",
-                 load_zones_ma) # hierarchical order
-
-
-  trend_start <- as.numeric(ymd(vanilla_train_start_date, tz = "UTC"))/3600
 
   #### Load data ====
   data <- load_smd_data(load_zones)

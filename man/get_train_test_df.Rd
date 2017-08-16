@@ -5,7 +5,7 @@
 \title{Get train and test data frames}
 \usage{
 get_train_test_df(vanilla_train_start_date, vanilla_train_end_date,
-  xgb_train_start_date, xgb_train_end_date)
+  xgb_train_start_date, xgb_train_end_date, trend_start)
 }
 \arguments{
 \item{vanilla_train_start_date}{start date for vanilla model's training data.}
@@ -15,6 +15,8 @@ get_train_test_df(vanilla_train_start_date, vanilla_train_end_date,
 \item{xgb_train_start_date}{start date for XGBoost model's training data.}
 
 \item{xgb_train_end_date}{end date for XGBoost model's training data.}
+
+\item{trend_start}{numeric value indicating trend start.}
 }
 \value{
 List containing xgb train, vanilla train and test data frames.

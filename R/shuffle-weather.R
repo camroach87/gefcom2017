@@ -3,10 +3,11 @@
 #' @param x data frame containing historical data
 #' @param fcst_start_date start date of forecasts
 #' @param fcst_end_date end date for forecasts
+#' @param trend_start numeric value indicating trend start.
 #'
 #' @return Data frame containing shuffled weather scenarios.
 #' @export
-shuffle_weather_xgb <- function(x, fcst_start_date, fcst_end_date) {
+shuffle_weather <- function(x, fcst_start_date, fcst_end_date, trend_start) {
   # This prevents incomplete shuffles being returned for lead shuffles in forecast year
   x <- x %>%
     filter(Year < year(fcst_start_date))
