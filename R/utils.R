@@ -38,3 +38,22 @@ get_rmse <- function(x) {
 
   return(x)
 }
+
+
+
+get_quantiles <- function(x) {
+  x %>%
+    group_by(Zone, ts, Date, Hour) %>%
+    summarise(Q0 = quantile(Prediction_rec, 0),
+              Q10 = quantile(Prediction_rec, 0.1),
+              Q20 = quantile(Prediction_rec, 0.2),
+              Q30 = quantile(Prediction_rec, 0.3),
+              Q40 = quantile(Prediction_rec, 0.4),
+              Q50 = quantile(Prediction_rec, 0.5),
+              Q60 = quantile(Prediction_rec, 0.6),
+              Q70 = quantile(Prediction_rec, 0.7),
+              Q80 = quantile(Prediction_rec, 0.8),
+              Q90 = quantile(Prediction_rec, 0.9),
+              Q100 = quantile(Prediction_rec, 1)) %>%
+    ungroup()
+}
