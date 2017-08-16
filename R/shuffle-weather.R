@@ -10,7 +10,7 @@
 shuffle_weather <- function(x, fcst_start_date, fcst_end_date, trend_start) {
   # This prevents incomplete shuffles being returned for lead shuffles in forecast year
   x <- x %>%
-    filter(Year < year(fcst_start_date))
+    dplyr::filter(Year < year(fcst_start_date))
 
   output <- NULL
   for (iD in -4:4) {
@@ -28,22 +28,24 @@ shuffle_weather <- function(x, fcst_start_date, fcst_end_date, trend_start) {
   output <- output %>%
     # TODO: This doesn't work if there is more than two months. Months
     # inbetween start and end months will not have year updated!
-    mutate(Simulation = paste(Year, Shuffle, sep = "_"),
-           Year = if_else(as.character(Month) == as.character(month(fcst_start_date, lab = TRUE)),
-                          year(fcst_start_date), Year),
-           Year = if_else(as.character(Month) == as.character(month(fcst_end_date, lab = TRUE)),
-                          year(fcst_end_date), Year))
+    dplyr::mutate(Simulation = paste(Year, Shuffle, sep = "_"),
+                  Year = if_else(as.character(Month) ==
+                                   as.character(month(fcst_start_date, lab = TRUE)),
+                                 lubridate::year(fcst_start_date), Year),
+           Year = if_else(as.character(Month) ==
+                            as.character(month(fcst_end_date, lab = TRUE)),
+                          lubridate::year(fcst_end_date), Year))
 
-  year(output$ts) <- output$Year # how to do this in dplyr?
-  year(output$Date) <- output$Year # how to do this in dplyr?
+  lubridate::year(output$ts) <- output$Year # how to do this in dplyr?
+  lubridate::year(output$Date) <- output$Year # how to do this in dplyr?
 
   output <- output %>%
-    filter(date(ts) <= fcst_end_date,
-           date(ts) >= fcst_start_date) %>%
+    dplyr::filter(lubridate::date(ts) <= fcst_end_date,
+                  lubridate::date(ts) >= fcst_start_date) %>%
     get_calendar_vars() %>%
     clean_smd_data() %>%
-    mutate(Trend = as.numeric(ts)/3600,
-           Trend = Trend - trend_start + 1) %>%
+    dplyr::mutate(Trend = as.numeric(ts)/3600,
+                  Trend = Trend - trend_start + 1) %>%
     na.omit()
 
   return(output)

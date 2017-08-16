@@ -59,9 +59,9 @@ hts_reconciliation <- function(
                 "WCMASS", "NEMASSBOST")
 ) {
   hts_raw <- fcsts %>%
-    select(one_of(variable_cols), Zone, Prediction = get(prediction_col)) %>%
-    spread(Zone, Prediction) %>%
-    select(one_of(c(variable_cols, zone_cols)))
+    dplyr::select(one_of(variable_cols), Zone, Prediction = get(prediction_col)) %>%
+    tidyr::spread(Zone, Prediction) %>%
+    dplyr::select(one_of(c(variable_cols, zone_cols)))
 
   hts_rec_sum <- t(apply(as.matrix(hts_raw[,zone_cols]), 1, h_rec, S))
   hts_rec_mean <- t(apply(as.matrix(hts_raw[,zone_cols]), 1, h_rec_w, S, W_mean))
