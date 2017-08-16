@@ -51,17 +51,17 @@ get_rmse <- function(x) {
 get_quantiles <- function(x, prediction_col) {
   x <- x %>%
     dplyr::group_by(Zone, ts, Date, Hour) %>%
-    dplyr::summarise(Q0 = quantile(!!prediction_col, 0),
-                     Q10 = quantile(!!prediction_col, 0.1),
-                     Q20 = quantile(!!prediction_col, 0.2),
-                     Q30 = quantile(!!prediction_col, 0.3),
-                     Q40 = quantile(!!prediction_col, 0.4),
-                     Q50 = quantile(!!prediction_col, 0.5),
-                     Q60 = quantile(!!prediction_col, 0.6),
-                     Q70 = quantile(!!prediction_col, 0.7),
-                     Q80 = quantile(!!prediction_col, 0.8),
-                     Q90 = quantile(!!prediction_col, 0.9),
-                     Q100 = quantile(!!prediction_col, 1)) %>%
+    dplyr::summarise(Q0 = quantile(get(prediction_col), 0),
+                     Q10 = quantile(get(prediction_col), 0.1),
+                     Q20 = quantile(get(prediction_col), 0.2),
+                     Q30 = quantile(get(prediction_col), 0.3),
+                     Q40 = quantile(get(prediction_col), 0.4),
+                     Q50 = quantile(get(prediction_col), 0.5),
+                     Q60 = quantile(get(prediction_col), 0.6),
+                     Q70 = quantile(get(prediction_col), 0.7),
+                     Q80 = quantile(get(prediction_col), 0.8),
+                     Q90 = quantile(get(prediction_col), 0.9),
+                     Q100 = quantile(get(prediction_col), 1)) %>%
     dplyr::ungroup()
 
   return(x)
