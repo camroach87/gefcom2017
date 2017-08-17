@@ -7,7 +7,7 @@
 sample_similar_day(fcst_dates, resid_dates)
 }
 \arguments{
-\item{fcst_dates}{data frame containing forecasts dates. These are the dates
+\item{fcst_dates}{vector containing forecasts dates. These are the dates
 we wish to find similar dates for.}
 
 \item{resid_dates}{data frame of residual date info. Must contain Date and

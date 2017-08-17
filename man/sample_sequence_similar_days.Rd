@@ -7,17 +7,17 @@
 sample_sequence_similar_days(fcst_dates, resid_dates)
 }
 \arguments{
-\item{fcst_dates}{data frame containing forecasts dates. These are the dates
-we wish to find similar dates for.}
+\item{fcst_dates}{vector containing forecasts dates. These are the dates we
+wish to find similar dates for.}
 
-\item{resid_dates}{data frame of residual date info. Must contain Date and
-Holiday_flag columns. Only unique values should be included.}
+\item{resid_dates}{data frame of residual date info. Must contain Date
+column. Only unique values should be included.}
 }
 \value{
 The forecast data frame with a new residuals column.
 }
 \description{
-Takes a vector of dates as inputs and randomly samples a random number of
+Takes a vector of dates as inputs and randomly samples a random number of 
 from the residual data frame. Similar dates can be defined by day of the week
 or working/non-working days.
 }
