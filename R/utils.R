@@ -39,7 +39,9 @@ get_rmse <- function(x) {
   return(x)
 }
 
-
+rmse <- function(actual, prediction) {
+  sqrt(mean((actual-prediction)^2))
+}
 
 #' Get quantiles
 #'
