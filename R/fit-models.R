@@ -1,11 +1,11 @@
 #' Fit xgboost and vanilla models
 #'
-#' @param xgb_train_df xgb train data frame.
-#' @param vanilla_train_df training data frame for vanilla model.
+#' @param train_df xgb train data frame.
+#' @param zones vector of zones to fit models for.
 #'
 #' @return A list of fitted models.
 #' @export
-fit_models <- function(vanilla_train_df, xgb_train_df) {
+fit_models <- function(train_df, zones) {
 
   #### fit zones ====
   xgb_ctrl <- trainControl(method = "repeatedcv",
@@ -25,11 +25,11 @@ fit_models <- function(vanilla_train_df, xgb_train_df) {
 
   model_list <- NULL
 
-  for (iZ in all_zones) {
+  for (iZ in zones) {
     cat("Fitting zone", iZ, "...\n")
 
     # Boosted models
-    model_list[[iZ]][["XGB"]] <- xgb_train_df %>%
+    model_list[[iZ]][["XGB"]] <- train_df %>%
       filter(Zone == iZ) %>%
       select(Demand, Hour, DoY, DoW, Holiday_flag, Trend,
              starts_with("DryBulb"), starts_with("DewPnt")) %>%
@@ -41,7 +41,7 @@ fit_models <- function(vanilla_train_df, xgb_train_df) {
             nthread = 1)
 
     # Tao's vanilla model
-    model_list[[iZ]][["Vanilla"]] <- vanilla_train_df %>%
+    model_list[[iZ]][["Vanilla"]] <- train_df %>%
       filter(Zone == iZ) %>%
       train(Demand ~ DoW*Period +
               poly(DryBulb, 3, raw = TRUE)*Month +

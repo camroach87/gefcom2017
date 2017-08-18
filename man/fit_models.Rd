@@ -4,12 +4,12 @@
 \alias{fit_models}
 \title{Fit xgboost and vanilla models}
 \usage{
-fit_models(vanilla_train_df, xgb_train_df)
+fit_models(train_df, zones)
 }
 \arguments{
-\item{vanilla_train_df}{training data frame for vanilla model.}
+\item{train_df}{xgb train data frame.}
 
-\item{xgb_train_df}{xgb train data frame.}
+\item{zones}{vector of zones to fit models for.}
 }
 \value{
 A list of fitted models.
