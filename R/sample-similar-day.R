@@ -63,19 +63,23 @@ sample_similar_day <- function(fcst_dates, resid_dates) {
 #'   wish to find similar dates for.
 #' @param resid_dates data frame of residual date info. Must contain Date
 #'   column. Only unique values should be included.
-#'   
+#' @param min_block_length integer giving minimum block length in days.
+#' @param max_block_length integer giving maximum block length in days.
+#' 
 #' @return The forecast data frame with a new residuals column.
 #' @export
 #' 
 #' @author Cameron Roach
-sample_sequence_similar_days <- function(fcst_dates, resid_dates) {
+sample_sequence_similar_days <- function(fcst_dates, resid_dates,
+                                         min_block_length = 6,
+                                         max_block_length = 14) {
   sim_residual_dates <- data_frame(
     Date = fcst_dates,
     Resid_date = as.Date(NA)
   )
   iD <- fcst_dates[1]
   while (iD <= fcst_dates[length(fcst_dates)]) {
-    block_length <- ceiling(runif(1, 6, 14))
+    block_length <- ceiling(runif(1, min_block_length, max_block_length))
     sample_date <- resid_dates %>% 
       filter(abs(yday(Date) - yday(iD)) <= 30) %>% 
       sample_n(1) %>% 

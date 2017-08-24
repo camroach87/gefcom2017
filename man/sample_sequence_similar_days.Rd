@@ -4,7 +4,8 @@
 \alias{sample_sequence_similar_days}
 \title{Sample sequence of similar days}
 \usage{
-sample_sequence_similar_days(fcst_dates, resid_dates)
+sample_sequence_similar_days(fcst_dates, resid_dates, min_block_length = 6,
+  max_block_length = 14)
 }
 \arguments{
 \item{fcst_dates}{vector containing forecasts dates. These are the dates we
@@ -12,6 +13,10 @@ wish to find similar dates for.}
 
 \item{resid_dates}{data frame of residual date info. Must contain Date
 column. Only unique values should be included.}
+
+\item{min_block_length}{integer giving minimum block length in days.}
+
+\item{max_block_length}{integer giving maximum block length in days.}
 }
 \value{
 The forecast data frame with a new residuals column.
