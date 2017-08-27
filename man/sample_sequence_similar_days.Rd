@@ -5,7 +5,7 @@
 \title{Sample sequence of similar days}
 \usage{
 sample_sequence_similar_days(fcst_dates, resid_dates, min_block_length = 6,
-  max_block_length = 14)
+  max_block_length = 14, date_drift = 7)
 }
 \arguments{
 \item{fcst_dates}{vector containing forecasts dates. These are the dates we
@@ -17,12 +17,15 @@ column. Only unique values should be included.}
 \item{min_block_length}{integer giving minimum block length in days.}
 
 \item{max_block_length}{integer giving maximum block length in days.}
+
+\item{date_drift}{integer specifying number of days that block start length
+can differ from current day of year.}
 }
 \value{
 The forecast data frame with a new residuals column.
 }
 \description{
-Takes a vector of dates as inputs and randomly samples a random number of 
+Takes a vector of dates as inputs and randomly samples a random number of
 from the residual data frame. Similar dates can be defined by day of the week
 or working/non-working days.
 }
