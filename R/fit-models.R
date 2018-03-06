@@ -37,8 +37,7 @@ fit_models <- function(train_df, zones) {
             data = .,
             method="xgbLinear",
             trControl = xgb_ctrl,
-            tuneGrid = xgb_grid_linear,
-            nthread = 1)
+            tuneGrid = xgb_grid_linear)
 
     # Tao's vanilla model
     model_list[[iZ]][["Vanilla"]] <- train_df %>%
